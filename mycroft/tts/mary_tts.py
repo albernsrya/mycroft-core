@@ -50,7 +50,7 @@ class MaryTTSValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            resp = requests.get(self.tts.url + "/version", verify=False)
+            resp = requests.get(self.tts.url + "/version", verify=True)
             if resp.status_code == 200:
                 return True
         except Exception:
