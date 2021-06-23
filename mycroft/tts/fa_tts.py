@@ -50,7 +50,7 @@ class FATTSValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            resp = requests.get(self.tts.url + "/info/version", verify=False)
+            resp = requests.get(self.tts.url + "/info/version", verify=True)
             content = resp.json()
             if content.get('product', '').find('FA-TTS') < 0:
                 raise Exception('Invalid FA-TTS server.')
