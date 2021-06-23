@@ -207,4 +207,4 @@ class MetricsPublisher:
             requests.post(
                 self.url,
                 headers={'Content-Type': 'application/json'},
-                data=json.dumps(events), verify=False)
+                data=json.dumps(events), verify=True)
