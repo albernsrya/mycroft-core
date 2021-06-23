@@ -30,7 +30,7 @@ class ComboLock:
         if not exists(path):
             f = open(path, 'w+')
             f.close()
-            chmod(path, 0x1ff)
+            chmod(path, stat.S_IRWXU)
         self.plock = InterProcessLock(path)
         self.tlock = Lock()
 
