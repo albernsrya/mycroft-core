@@ -13,11 +13,13 @@
 # limitations under the License.
 #
 
-from .tts import TTS, TTSValidator
-from mycroft.configuration import Configuration
+import wave
 
 import requests
-import wave
+
+from mycroft.configuration import Configuration
+
+from .tts import TTS, TTSValidator
 
 _API_URL = "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize"
 
@@ -51,7 +53,7 @@ class YandexTTS(TTS):
             "emotion": self.emotion,
             "speed": self.speed,
             "format": "lpcm",
-            "sampleRateHertz": self.sample_rate
+            "sampleRateHertz": self.sample_rate,
         }
 
         with requests.post(_API_URL, headers=headers, data=data,

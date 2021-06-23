@@ -13,6 +13,6 @@
 # limitations under the License.
 #
 
-from .tools import (emit_utterance, wait_for_dialog, then_wait,
-                    then_wait_fail, mycroft_responses,
-                    print_mycroft_responses, wait_for_audio_service)
+from .tools import (emit_utterance, mycroft_responses, print_mycroft_responses,
+                    then_wait, then_wait_fail, wait_for_audio_service,
+                    wait_for_dialog)

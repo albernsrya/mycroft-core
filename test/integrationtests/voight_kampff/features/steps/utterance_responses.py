@@ -16,19 +16,17 @@
 Predefined step definitions for handling dialog interaction with Mycroft for
 use with behave.
 """
-from os.path import join, exists, basename
-from glob import glob
 import re
 import time
-
-from behave import given, when, then
-
-from mycroft.messagebus import Message
-from mycroft.audio import wait_while_speaking
-
+from glob import glob
+from os.path import basename, exists, join
 from test.integrationtests.voight_kampff import (mycroft_responses, then_wait,
                                                  then_wait_fail)
 
+from behave import given, then, when
+
+from mycroft.audio import wait_while_speaking
+from mycroft.messagebus import Message
 
 TIMEOUT = 10
 SLEEP_LENGTH = 0.25
@@ -39,18 +37,20 @@ def find_dialog(skill_path, dialog, lang):
 
     TODO: subfolders
     """
-    if exists(join(skill_path, 'dialog')):
-        return join(skill_path, 'dialog', lang, dialog)
+    if exists(join(skill_path, "dialog")):
+        return join(skill_path, "dialog", lang, dialog)
     else:
-        return join(skill_path, 'locale', lang, dialog)
+        return join(skill_path, "locale", lang, dialog)
 
 
 def load_dialog_file(dialog_path):
     """Load dialog files and get the contents."""
     with open(dialog_path) as f:
         lines = f.readlines()
-    return [l.strip().lower() for l in lines
-            if l.strip() != '' and l.strip()[0] != '#']
+    return [
+        l.strip().lower() for l in lines
+        if l.strip() != "" and l.strip()[0] != "#"
+    ]
 
 
 def load_dialog_list(skill_path, dialog):
@@ -65,7 +65,7 @@ def load_dialog_list(skill_path, dialog):
     """
     dialog_path = find_dialog(skill_path, dialog)
 
-    debug = 'Opening {}\n'.format(dialog_path)
+    debug = "Opening {}\n".format(dialog_path)
     return load_dialog_file(dialog_path), debug
 
 
@@ -79,7 +79,7 @@ def dialog_from_sentence(sentence, skill_path, lang):
 
     Returns (str): Dialog file best matching the sentence.
     """
-    dialog_paths = join(skill_path, 'dialog', lang, '*.dialog')
+    dialog_paths = join(skill_path, "dialog", lang, "*.dialog")
     best = (None, 0)
     for path in glob(dialog_paths):
         patterns = load_dialog_file(path)
@@ -99,39 +99,39 @@ def _match_dialog_patterns(dialogs, sentence):
     Returns index of found match.
     """
     # Allow custom fields to be anything
-    dialogs = [re.sub(r'{.*?\}', r'.*', dia) for dia in dialogs]
+    dialogs = [re.sub(r"{.*?\}", r".*", dia) for dia in dialogs]
     # Remove left over '}'
-    dialogs = [re.sub(r'\}', r'', dia) for dia in dialogs]
-    dialogs = [re.sub(r' .* ', r' .*', dia) for dia in dialogs]
+    dialogs = [re.sub(r"\}", r"", dia) for dia in dialogs]
+    dialogs = [re.sub(r" .* ", r" .*", dia) for dia in dialogs]
     # Merge consequtive .*'s into a single .*
-    dialogs = [re.sub(r'\.\*( \.\*)+', r'.*', dia) for dia in dialogs]
+    dialogs = [re.sub(r"\.\*( \.\*)+", r".*", dia) for dia in dialogs]
     # Remove double whitespaces
-    dialogs = ['^' + ' '.join(dia.split()) for dia in dialogs]
-    debug = 'MATCHING: {}\n'.format(sentence)
+    dialogs = ["^" + " ".join(dia.split()) for dia in dialogs]
+    debug = "MATCHING: {}\n".format(sentence)
     for index, regex in enumerate(dialogs):
         match = re.match(regex, sentence)
-        debug += '---------------\n'
-        debug += '{} {}\n'.format(regex, match is not None)
+        debug += "---------------\n"
+        debug += "{} {}\n".format(regex, match is not None)
         if match:
             return index, debug
     else:
         return False, debug
 
 
-@given('an english speaking user')
+@given("an english speaking user")
 def given_english(context):
-    context.lang = 'en-us'
+    context.lang = "en-us"
 
 
-@given('a {timeout} seconds timeout')
-@given('a {timeout} second timeout')
+@given("a {timeout} seconds timeout")
+@given("a {timeout} second timeout")
 def given_timeout(context, timeout):
     """Set the timeout for the steps in this scenario."""
     context.step_timeout = float(timeout)
 
 
-@given('a {timeout} minutes timeout')
-@given('a {timeout} minute timeout')
+@given("a {timeout} minutes timeout")
+@given("a {timeout} minute timeout")
 def given_timeout(context, timeout):
     """Set the timeout for the steps in this scenario."""
     context.step_timeout = float(timeout) * 60
@@ -139,75 +139,79 @@ def given_timeout(context, timeout):
 
 @when('the user says "{text}"')
 def when_user_says(context, text):
-    context.bus.emit(Message('recognizer_loop:utterance',
-                             data={'utterances': [text],
-                                   'lang': context.lang,
-                                   'session': '',
-                                   'ident': time.time()},
-                             context={'client_name': 'mycroft_listener'}))
+    context.bus.emit(
+        Message(
+            "recognizer_loop:utterance",
+            data={
+                "utterances": [text],
+                "lang": context.lang,
+                "session": "",
+                "ident": time.time(),
+            },
+            context={"client_name": "mycroft_listener"},
+        ))
 
 
 @then('"{skill}" should reply with dialog from "{dialog}"')
 def then_dialog(context, skill, dialog):
     def check_dialog(message):
-        utt_dialog = message.data.get('meta', {}).get('dialog')
-        return (utt_dialog == dialog.replace('.dialog', ''), '')
+        utt_dialog = message.data.get("meta", {}).get("dialog")
+        return (utt_dialog == dialog.replace(".dialog", ""), "")
 
-    passed, debug = then_wait('speak', check_dialog, context)
+    passed, debug = then_wait("speak", check_dialog, context)
     if not passed:
         assert_msg = debug
         assert_msg += mycroft_responses(context)
 
-    assert passed, assert_msg or 'Mycroft didn\'t respond'
+    assert passed, assert_msg or "Mycroft didn't respond"
 
 
 @then('"{skill}" should not reply')
 def then_do_not_reply(context, skill):
-
     def check_all_dialog(message):
-        msg_skill = message.data.get('meta').get('skill')
-        utt = message.data['utterance'].lower()
+        msg_skill = message.data.get("meta").get("skill")
+        utt = message.data["utterance"].lower()
         skill_responded = skill == msg_skill
         debug_msg = ("{} responded with '{}'. \n".format(skill, utt)
-                     if skill_responded else '')
+                     if skill_responded else "")
         return (skill_responded, debug_msg)
 
-    passed, debug = then_wait_fail('speak', check_all_dialog, context)
+    passed, debug = then_wait_fail("speak", check_all_dialog, context)
     if not passed:
         assert_msg = debug
         assert_msg += mycroft_responses(context)
-    assert passed, assert_msg or '{} responded'.format(skill)
+    assert passed, assert_msg or "{} responded".format(skill)
 
 
 @then('"{skill}" should reply with "{example}"')
 def then_example(context, skill, example):
     skill_path = context.msm.find_skill(skill).path
     dialog = dialog_from_sentence(example, skill_path, context.lang)
-    print('Matching with the dialog file: {}'.format(dialog))
-    assert dialog is not None, 'No matching dialog...'
+    print("Matching with the dialog file: {}".format(dialog))
+    assert dialog is not None, "No matching dialog..."
     then_dialog(context, skill, dialog)
 
 
 @then('"{skill}" should reply with anything')
 def then_anything(context, skill):
     def check_any_messages(message):
-        debug = ''
+        debug = ""
         result = message is not None
         return (result, debug)
 
-    passed = then_wait('speak', check_any_messages, context)
-    assert passed, 'No speech received at all'
+    passed = then_wait("speak", check_any_messages, context)
+    assert passed, "No speech received at all"
 
 
 @then('"{skill}" should reply with exactly "{text}"')
 def then_exactly(context, skill, text):
     def check_exact_match(message):
-        utt = message.data['utterance'].lower()
-        debug = 'Comparing {} with expected {}\n'.format(utt, text)
+        utt = message.data["utterance"].lower()
+        debug = "Comparing {} with expected {}\n".format(utt, text)
         result = utt == text.lower()
         return (result, debug)
 
-    passed, debug = then_wait('speak', check_exact_match, context)
+    passed, debug = then_wait("speak", check_exact_match, context)
     if not passed:
         assert_msg = debug
         assert_msg += mycroft_responses(context)
@@ -217,15 +221,15 @@ def then_exactly(context, skill, text):
 @then('mycroft reply should contain "{text}"')
 def then_contains(context, text):
     def check_contains(message):
-        utt = message.data['utterance'].lower()
+        utt = message.data["utterance"].lower()
         debug = 'Checking if "{}" contains "{}"\n'.format(utt, text)
         result = text.lower() in utt
         return (result, debug)
 
-    passed, debug = then_wait('speak', check_contains, context)
+    passed, debug = then_wait("speak", check_contains, context)
 
     if not passed:
-        assert_msg = 'No speech contained the expected content'
+        assert_msg = "No speech contained the expected content"
         assert_msg += mycroft_responses(context)
 
     assert passed, assert_msg
@@ -237,12 +241,17 @@ def then_contains(context, text):
 def then_user_follow_up(context, text):
     time.sleep(2)
     wait_while_speaking()
-    context.bus.emit(Message('recognizer_loop:utterance',
-                             data={'utterances': [text],
-                                   'lang': context.lang,
-                                   'session': '',
-                                   'ident': time.time()},
-                             context={'client_name': 'mycroft_listener'}))
+    context.bus.emit(
+        Message(
+            "recognizer_loop:utterance",
+            data={
+                "utterances": [text],
+                "lang": context.lang,
+                "session": "",
+                "ident": time.time(),
+            },
+            context={"client_name": "mycroft_listener"},
+        ))
 
 
 @then('mycroft should send the message "{message_type}"')

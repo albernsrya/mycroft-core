@@ -16,29 +16,25 @@
 
     This handles playback of audio and speech
 """
-from mycroft.util import (
-    check_for_signal,
-    reset_sigint_handler,
-    start_message_bus_client,
-    wait_for_exit_signal
-)
+import mycroft.audio.speech as speech
+from mycroft.util import (check_for_signal, reset_sigint_handler,
+                          start_message_bus_client, wait_for_exit_signal)
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
-import mycroft.audio.speech as speech
 from .audioservice import AudioService
 
 
 def on_ready():
-    LOG.info('Audio service is ready.')
+    LOG.info("Audio service is ready.")
 
 
-def on_error(e='Unknown'):
-    LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
+def on_error(e="Unknown"):
+    LOG.error("Audio service failed to launch ({}).".format(repr(e)))
 
 
 def on_stopping():
-    LOG.info('Audio service is shutting down...')
+    LOG.info("Audio service is shutting down...")
 
 
 def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
@@ -47,11 +43,12 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     try:
         reset_sigint_handler()
         check_for_signal("isSpeaking")
-        whitelist = ['mycroft.audio.service']
+        whitelist = ["mycroft.audio.service"]
         bus = start_message_bus_client("AUDIO", whitelist=whitelist)
-        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
+        callbacks = StatusCallbackMap(on_ready=ready_hook,
+                                      on_error=error_hook,
                                       on_stopping=stopping_hook)
-        status = ProcessStatus('audio', bus, callbacks)
+        status = ProcessStatus("audio", bus, callbacks)
 
         speech.init(bus)
 
@@ -67,11 +64,11 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
             wait_for_exit_signal()
             status.set_stopping()
         else:
-            status.set_error('No audio services loaded')
+            status.set_error("No audio services loaded")
 
         speech.shutdown()
         audio.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

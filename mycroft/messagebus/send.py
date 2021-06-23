@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import sys
 import json
+import sys
 
 from .send_func import send
 
@@ -37,7 +37,7 @@ def main():
         except BaseException:
             print("Second argument must be a JSON string")
             print("Ex: python -m mycroft.messagebus.send speak "
-                  "'{\"utterance\" : \"hello\"}'")
+                  '\'{"utterance" : "hello"}\'')
             exit()
     else:
         print("Command line interface to the mycroft-core messagebus.")
@@ -45,14 +45,14 @@ def main():
         print("       python -m mycroft.messagebus.send message JSON-string\n")
         print("Examples: python -m mycroft.messagebus.send system.wifi.setup")
         print("Ex: python -m mycroft.messagebus.send speak "
-              "'{\"utterance\" : \"hello\"}'")
+              '\'{"utterance" : "hello"}\'')
         exit()
 
     send(message_to_send, data_to_send)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except IOError:
-        print('Could not connect to websocket, no message sent')
+        print("Could not connect to websocket, no message sent")

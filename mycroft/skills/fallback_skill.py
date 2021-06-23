@@ -16,9 +16,9 @@
 utterances not handled by the intent system.
 """
 import operator
-from mycroft.metrics import report_timing, Stopwatch
-from mycroft.util.log import LOG
 
+from mycroft.metrics import Stopwatch, report_timing
+from mycroft.util.log import LOG
 
 from .mycroft_skill import MycroftSkill, get_handler_name
 
@@ -47,6 +47,7 @@ class FallbackSkill(MycroftSkill):
     A Fallback can either observe or consume an utterance. A consumed
     utterance will not be see by any other Fallback handlers.
     """
+
     fallback_handlers = {}
     wrapper_map = []  # Map containing (handler, wrapper) tuples
 
@@ -59,51 +60,61 @@ class FallbackSkill(MycroftSkill):
     @classmethod
     def make_intent_failure_handler(cls, bus):
         """Goes through all fallback handlers until one returns True"""
-
         def handler(message):
-            start, stop = message.data.get('fallback_range', (0, 101))
+            start, stop = message.data.get("fallback_range", (0, 101))
             # indicate fallback handling start
-            LOG.debug('Checking fallbacks in range '
-                      '{} - {}'.format(start, stop))
-            bus.emit(message.forward("mycroft.skill.handler.start",
-                                     data={'handler': "fallback"}))
+            LOG.debug("Checking fallbacks in range "
+                      "{} - {}".format(start, stop))
+            bus.emit(
+                message.forward("mycroft.skill.handler.start",
+                                data={"handler": "fallback"}))
 
             stopwatch = Stopwatch()
             handler_name = None
             with stopwatch:
                 sorted_handlers = sorted(cls.fallback_handlers.items(),
                                          key=operator.itemgetter(0))
-                handlers = [f[1] for f in sorted_handlers
-                            if start <= f[0] < stop]
+                handlers = [
+                    f[1] for f in sorted_handlers if start <= f[0] < stop
+                ]
                 for handler in handlers:
                     try:
                         if handler(message):
                             # indicate completion
                             status = True
                             handler_name = get_handler_name(handler)
-                            bus.emit(message.forward(
-                                     'mycroft.skill.handler.complete',
-                                     data={'handler': "fallback",
-                                           "fallback_handler": handler_name}))
+                            bus.emit(
+                                message.forward(
+                                    "mycroft.skill.handler.complete",
+                                    data={
+                                        "handler": "fallback",
+                                        "fallback_handler": handler_name,
+                                    },
+                                ))
                             break
                     except Exception:
-                        LOG.exception('Exception in fallback.')
+                        LOG.exception("Exception in fallback.")
                 else:
                     status = False
                     #  indicate completion with exception
-                    warning = 'No fallback could handle intent.'
-                    bus.emit(message.forward('mycroft.skill.handler.complete',
-                                             data={'handler': "fallback",
-                                                   'exception': warning}))
+                    warning = "No fallback could handle intent."
+                    bus.emit(
+                        message.forward(
+                            "mycroft.skill.handler.complete",
+                            data={
+                                "handler": "fallback",
+                                "exception": warning
+                            },
+                        ))
 
             # return if the utterance was handled to the caller
-            bus.emit(message.response(data={'handled': status}))
+            bus.emit(message.response(data={"handled": status}))
 
             # Send timing metric
-            if message.context.get('ident'):
-                ident = message.context['ident']
-                report_timing(ident, 'fallback_handler', stopwatch,
-                              {'handler': handler_name})
+            if message.context.get("ident"):
+                ident = message.context["ident"]
+                report_timing(ident, "fallback_handler", stopwatch,
+                              {"handler": handler_name})
 
         return handler
 
@@ -132,7 +143,6 @@ class FallbackSkill(MycroftSkill):
         """Register a fallback with the list of fallback handlers and with the
         list of handlers registered by this instance
         """
-
         def wrapper(*args, **kwargs):
             if handler(*args, **kwargs):
                 self.make_active()
@@ -159,7 +169,7 @@ class FallbackSkill(MycroftSkill):
                 del cls.fallback_handlers[priority]
 
         if not found_handler:
-            LOG.warning('No fallback matching {}'.format(wrapper_to_del))
+            LOG.warning("No fallback matching {}".format(wrapper_to_del))
         return found_handler
 
     @classmethod
@@ -182,13 +192,13 @@ class FallbackSkill(MycroftSkill):
             cls.wrapper_map.remove((h, w))
             remove_ok = cls._remove_registered_handler(wrapper_to_del)
         else:
-            LOG.warning('Could not find matching fallback handler')
+            LOG.warning("Could not find matching fallback handler")
             remove_ok = False
         return remove_ok
 
     def remove_instance_handlers(self):
         """Remove all fallback handlers registered by the fallback skill."""
-        self.log.info('Removing all handlers...')
+        self.log.info("Removing all handlers...")
         while len(self.instance_fallback_handlers):
             handler = self.instance_fallback_handlers.pop()
             self.remove_fallback(handler)

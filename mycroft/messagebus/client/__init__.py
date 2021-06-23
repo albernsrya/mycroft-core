@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """TODO: 21.08 simplify structure (move client.py up one level)."""
-from .client import MessageWaiter, MessageBusClient
+from .client import MessageBusClient, MessageWaiter

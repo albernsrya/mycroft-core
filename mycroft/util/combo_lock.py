@@ -12,30 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from threading import Lock
-from fasteners.process_lock import InterProcessLock
-from os.path import exists
 from os import chmod
+from os.path import exists
+from threading import Lock
+
+from fasteners.process_lock import InterProcessLock
 
 
 class ComboLock:
-    """ A combined process and thread lock.
+    """A combined process and thread lock.
 
     Args:
         path (str): path to the lockfile for the lock
     """
+
     def __init__(self, path):
         # Create lock file if it doesn't exist and set permissions for
         # all users to lock/unlock
         if not exists(path):
-            f = open(path, 'w+')
+            f = open(path, "w+")
             f.close()
-            chmod(path, 0x1ff)
+            chmod(path, 0x1FF)
         self.plock = InterProcessLock(path)
         self.tlock = Lock()
 
     def acquire(self, blocking=True):
-        """ Acquire lock, locks thread and process lock.
+        """Acquire lock, locks thread and process lock.
 
         Args:
             blocking(bool): Set's blocking mode of acquire operation.
@@ -60,15 +62,15 @@ class ComboLock:
         return True
 
     def release(self):
-        """ Release acquired lock. """
+        """Release acquired lock."""
         self.plock.release()
         self.tlock.release()
 
     def __enter__(self):
-        """ Context handler, acquires lock in blocking mode. """
+        """Context handler, acquires lock in blocking mode."""
         self.acquire()
         return self
 
     def __exit__(self, _type, value, traceback):
-        """ Releases the lock. """
+        """Releases the lock."""
         self.release()

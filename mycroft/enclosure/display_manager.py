@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """ DisplayManager
 
 This module provides basic "state" for the visual representation associated
@@ -33,9 +32,8 @@ So it is common to have '' as the active skill.
 """
 
 import json
-from threading import Thread, Timer
-
 import os
+from threading import Thread, Timer
 
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.util import get_ipc_directory
@@ -43,7 +41,7 @@ from mycroft.util.log import LOG
 
 
 def _write_data(dictionary):
-    """ Writes the dictionary of state data to the IPC directory.
+    """Writes the dictionary of state data to the IPC directory.
 
     Args:
         dictionary (dict): information to place in the 'disp_info' file
@@ -86,7 +84,7 @@ def _write_data(dictionary):
 
 
 def _read_data():
-    """ Writes the dictionary of state data from the IPC directory.
+    """Writes the dictionary of state data from the IPC directory.
     Returns:
         dict: loaded state information
     """
@@ -114,14 +112,15 @@ def _read_data():
 
 
 class DisplayManager:
-    """ The Display manager handles the basic state of the display,
+    """The Display manager handles the basic state of the display,
     be it a mark-1 or a mark-2 or even a future Mark-3.
     """
+
     def __init__(self, name=None):
         self.name = name or ""
 
     def set_active(self, skill_name=None):
-        """ Sets skill name as active in the display Manager
+        """Sets skill name as active in the display Manager
         Args:
             string: skill_name
         """
@@ -129,7 +128,7 @@ class DisplayManager:
         _write_data({"active_skill": name})
 
     def get_active(self):
-        """ Get the currenlty active skill from the display manager
+        """Get the currenlty active skill from the display manager
         Returns:
             string: The active skill's name
         """
@@ -142,13 +141,13 @@ class DisplayManager:
         return active_skill
 
     def remove_active(self):
-        """ Clears the active skill """
+        """Clears the active skill"""
         LOG.debug("Removing active skill...")
         _write_data({"active_skill": ""})
 
 
 def init_display_manager_bus_connection():
-    """ Connects the display manager to the messagebus """
+    """Connects the display manager to the messagebus"""
     LOG.info("Connecting display manager to messagebus")
 
     # Should remove needs to be an object so it can be referenced in functions
@@ -180,9 +179,9 @@ def init_display_manager_bus_connection():
         Timer(10, remove_wake_word).start()
 
     bus = MessageBusClient()
-    bus.on('recognizer_loop:audio_output_end', set_delay)
-    bus.on('recognizer_loop:audio_output_start', set_remove_flag)
-    bus.on('recognizer_loop:record_begin', set_wakeword_skill)
+    bus.on("recognizer_loop:audio_output_end", set_delay)
+    bus.on("recognizer_loop:audio_output_start", set_remove_flag)
+    bus.on("recognizer_loop:record_begin", set_wakeword_skill)
 
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)

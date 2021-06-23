@@ -14,13 +14,15 @@
 #
 """Intent service for Mycroft's fallback system."""
 from collections import namedtuple
+
 from .base import IntentMatch
 
-FallbackRange = namedtuple('FallbackRange', ['start', 'stop'])
+FallbackRange = namedtuple("FallbackRange", ["start", "stop"])
 
 
 class FallbackService:
     """Intent Service handling fallback skills."""
+
     def __init__(self, bus):
         self.bus = bus
 
@@ -38,14 +40,16 @@ class FallbackService:
             IntentMatch or None
         """
         msg = message.reply(
-            'mycroft.skills.fallback',
-            data={'utterance': utterances[0][0],
-                  'lang': lang,
-                  'fallback_range': (fb_range.start, fb_range.stop)}
+            "mycroft.skills.fallback",
+            data={
+                "utterance": utterances[0][0],
+                "lang": lang,
+                "fallback_range": (fb_range.start, fb_range.stop),
+            },
         )
         response = self.bus.wait_for_response(msg, timeout=10)
-        if response and response.data['handled']:
-            ret = IntentMatch('Fallback', None, {}, None)
+        if response and response.data["handled"]:
+            ret = IntentMatch("Fallback", None, {}, None)
         else:
             ret = None
         return ret

@@ -14,23 +14,24 @@
 #
 import logging
 from threading import Event, Lock
-from time import sleep, monotonic
-from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
+from time import monotonic, sleep
 
+from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 from msm import MycroftSkillsManager
+
 from mycroft.audio import wait_while_speaking
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus import Message
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.util import create_daemon
 
 
 def create_voight_kampff_logger():
-    fmt = logging.Formatter('{asctime} | {name} | {levelname} | {message}',
-                            style='{')
+    fmt = logging.Formatter("{asctime} | {name} | {levelname} | {message}",
+                            style="{")
     handler = logging.StreamHandler()
     handler.setFormatter(fmt)
-    log = logging.getLogger('Voight Kampff')
+    log = logging.getLogger("Voight Kampff")
     log.addHandler(handler)
     log.setLevel(logging.INFO)
     log.propagate = False
@@ -70,23 +71,23 @@ def before_all(context):
     log = create_voight_kampff_logger()
     bus = InterceptAllBusClient()
     bus_connected = Event()
-    bus.once('open', bus_connected.set)
+    bus.once("open", bus_connected.set)
 
     create_daemon(bus.run_forever)
 
     context.msm = MycroftSkillsManager()
     # Wait for connection
-    log.info('Waiting for messagebus connection...')
+    log.info("Waiting for messagebus connection...")
     bus_connected.wait()
 
-    log.info('Waiting for skills to be loaded...')
+    log.info("Waiting for skills to be loaded...")
     start = monotonic()
     while True:
-        response = bus.wait_for_response(Message('mycroft.skills.all_loaded'))
-        if response and response.data['status']:
+        response = bus.wait_for_response(Message("mycroft.skills.all_loaded"))
+        if response and response.data["status"]:
             break
         elif monotonic() - start >= 2 * 60:
-            raise Exception('Timeout waiting for skills to become ready.')
+            raise Exception("Timeout waiting for skills to become ready.")
         else:
             sleep(1)
 
@@ -99,7 +100,7 @@ def before_all(context):
 
 
 def before_feature(context, feature):
-    context.log.info('Starting tests for {}'.format(feature.name))
+    context.log.info("Starting tests for {}".format(feature.name))
     for scenario in feature.scenarios:
         patch_scenario_with_autoretry(scenario, max_attempts=2)
 
@@ -109,7 +110,7 @@ def after_all(context):
 
 
 def after_feature(context, feature):
-    context.log.info('Result: {} ({:.2f}s)'.format(str(feature.status.name),
+    context.log.info("Result: {} ({:.2f}s)".format(str(feature.status.name),
                                                    feature.duration))
     sleep(1)
 

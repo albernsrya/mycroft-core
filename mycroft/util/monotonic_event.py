@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Events with respect for montonic time.
 
 The MontonicEvent class defined here wraps the normal class ensuring that
 changes in system time are handled.
 """
 from threading import Event
-from time import sleep, monotonic
+from time import monotonic, sleep
 
 from mycroft.util.log import LOG
 
@@ -31,6 +30,7 @@ class MonotonicEvent(Event):
     affected by changes in system time. This class wraps the Event class
     wait() method with logic guards ensuring monotonic operation.
     """
+
     def wait_timeout(self, timeout):
         """Handle timeouts in a monotonic way.
 
@@ -50,7 +50,7 @@ class MonotonicEvent(Event):
             # Wait however many seconds are left until the timeout has passed
             sleep(0.1)  # Mainly a precaution to not busy wait
             remaining_time = end_time - monotonic()
-            LOG.debug('Will wait for {} sec for Event'.format(remaining_time))
+            LOG.debug("Will wait for {} sec for Event".format(remaining_time))
             result = super().wait(remaining_time)
 
         return result

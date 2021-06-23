@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """
 The mycroft.util.lang module provides the main interface for setting up the
 lingua-franca (https://github.com/mycroftai/lingua-franca) selected language

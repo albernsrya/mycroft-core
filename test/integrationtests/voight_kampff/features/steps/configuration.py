@@ -13,10 +13,11 @@
 # limitations under the License.
 #
 import json
-from os.path import join, exists
 import time
+from os.path import exists, join
 
 from behave import given
+
 from mycroft.messagebus import Message
 from mycroft.util import resolve_resource_file
 
@@ -48,8 +49,8 @@ def reset_config(context):
     Args:
         context (Context): Behave context of current scenario
     """
-    context.log.info('Resetting patched configuration...')
-    context.bus.emit(Message('configuration.patch.clear'))
+    context.log.info("Resetting patched configuration...")
+    context.bus.emit(Message("configuration.patch.clear"))
     key = list(context.original_config)[0]
     wait_for_config_change(context, key, context.original_config[key])
 
@@ -61,9 +62,9 @@ def patch_config(context, patch):
         context: Behave context for test
         patch: patch to apply
     """
-    context.log.info('Patching config with {}'.format(patch))
+    context.log.info("Patching config with {}".format(patch))
     # If this is first patch in scenario
-    if not hasattr(context, 'original_config'):
+    if not hasattr(context, "original_config"):
         context.original_config = {}
 
     # store originals in context
@@ -73,7 +74,7 @@ def patch_config(context, patch):
             context.original_config[key] = context.config.get(key)
 
     # Patch config
-    patch_config_msg = Message('configuration.patch', {'config': patch})
+    patch_config_msg = Message("configuration.patch", {"config": patch})
     context.bus.emit(patch_config_msg)
 
     context.add_cleanup(reset_config, context)
@@ -110,8 +111,8 @@ def get_global_config_definition(context, config, value):
     Returns:
         Patch dictionary or None.
     """
-    configs_path = resolve_resource_file(join('text', context.lang,
-                                              'configurations.json'))
+    configs_path = resolve_resource_file(
+        join("text", context.lang, "configurations.json"))
     return get_config_file_definition(configs_path, config, value)
 
 
@@ -126,19 +127,20 @@ def get_feature_config_definition(context, config, value):
     Returns:
         Patch dictionary or None.
     """
-    feature_config = context.feature.filename.replace('.feature',
-                                                      '.config.json')
+    feature_config = context.feature.filename.replace(".feature",
+                                                      ".config.json")
     if exists(feature_config):
         return get_config_file_definition(feature_config, config, value)
     else:
         return None
 
 
-@given('the user\'s {config} is {value}')
+@given("the user's {config} is {value}")
 def given_config(context, config, value):
     """Patch the configuration with a specific config."""
     config = config.strip('"')
     value = value.strip('"')
-    patch_dict = (get_feature_config_definition(context, config, value) or
-                  get_global_config_definition(context, config, value))
+    patch_dict = get_feature_config_definition(
+        context, config, value) or get_global_config_definition(
+            context, config, value)
     patch_config(context, patch_dict)

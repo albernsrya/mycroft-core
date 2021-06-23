@@ -5,7 +5,7 @@ from mycroft.skills import FallbackSkill
 
 def setup_fallback(fb_class):
     fb_skill = fb_class()
-    fb_skill.bind(mock.Mock(name='bus'))
+    fb_skill.bind(mock.Mock(name="bus"))
     fb_skill.initialize()
     return fb_skill
 
@@ -46,6 +46,7 @@ class TestFallbackSkill(TestCase):
 
 class SimpleFallback(FallbackSkill):
     """Simple fallback skill used for test."""
+
     def initialize(self):
         self.register_fallback(self.fallback_handler, 42)
 

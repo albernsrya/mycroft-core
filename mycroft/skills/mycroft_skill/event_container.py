@@ -35,8 +35,8 @@ def get_handler_name(handler):
     Returns:
         string: handler name as string
     """
-    if '__self__' in dir(handler) and 'name' in dir(handler.__self__):
-        return handler.__self__.name + '.' + handler.__name__
+    if "__self__" in dir(handler) and "name" in dir(handler.__self__):
+        return handler.__self__.name + "." + handler.__name__
     else:
         return handler.__name__
 
@@ -81,10 +81,17 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
 
             # Send timing metrics
             context = message.context
-            if context and 'ident' in context:
-                report_timing(context['ident'], 'skill_handler', stopwatch,
-                              {'handler': handler.__name__,
-                               'skill_id': skill_id})
+            if context and "ident" in context:
+                report_timing(
+                    context["ident"],
+                    "skill_handler",
+                    stopwatch,
+                    {
+                        "handler": handler.__name__,
+                        "skill_id": skill_id
+                    },
+                )
+
     return wrapper
 
 
@@ -120,6 +127,7 @@ class EventContainer:
     This container tracks events added by a skill, allowing unregistering
     all events on shutdown.
     """
+
     def __init__(self, bus=None):
         self.bus = bus
         self.events = []
@@ -150,7 +158,7 @@ class EventContainer:
                 self.bus.on(name, handler)
                 self.events.append((name, handler))
 
-            LOG.debug('Added event: {}'.format(name))
+            LOG.debug("Added event: {}".format(name))
 
     def remove(self, name):
         """Removes an event from bus emitter and events list.
@@ -167,7 +175,7 @@ class EventContainer:
                 try:
                     self.events.remove((_name, _handler))
                 except ValueError:
-                    LOG.error('Failed to remove event {}'.format(name))
+                    LOG.error("Failed to remove event {}".format(name))
                     pass
                 removed = True
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import os
-from os.path import join, expanduser, isdir
+from os.path import expanduser, isdir, join
 
 
 class FileSystemAccess:
@@ -31,7 +31,7 @@ class FileSystemAccess:
     def __init_path(path):
         if not isinstance(path, str) or len(path) == 0:
             raise ValueError("path must be initialized as a non empty string")
-        path = join(expanduser('~'), '.mycroft', path)
+        path = join(expanduser("~"), ".mycroft", path)
 
         if not isdir(path):
             os.makedirs(path)

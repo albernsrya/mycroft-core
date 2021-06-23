@@ -17,7 +17,6 @@ from unittest import TestCase
 
 from mycroft.client.speech.mic import NoiseTracker
 
-
 LOUD_TIME_LIMIT = 2.0  # Must be loud for 2 seconds
 SILENCE_TIME_LIMIT = 5.0  # Time out after 5 seconds of silence
 SECS_PER_BUFFER = 0.5
@@ -72,8 +71,7 @@ class TestNoiseTracker(TestCase):
         self.assertTrue(noise_tracker.recording_complete())
 
     def test_all_loud_data(self):
-        """Check that only loud samples doesn't generate a complete recording.
-        """
+        """Check that only loud samples doesn't generate a complete recording."""
         noise_tracker = NoiseTracker(MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER,
                                      LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT)
 
@@ -83,8 +81,7 @@ class TestNoiseTracker(TestCase):
             self.assertFalse(noise_tracker.recording_complete())
 
     def test_all_loud_followed_by_silence(self):
-        """Check that a long enough high sentence is completed after silence.
-        """
+        """Check that a long enough high sentence is completed after silence."""
         noise_tracker = NoiseTracker(MIN_NOISE, MAX_NOISE, SECS_PER_BUFFER,
                                      LOUD_TIME_LIMIT, SILENCE_TIME_LIMIT)
 

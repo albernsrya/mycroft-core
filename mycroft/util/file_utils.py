@@ -19,11 +19,13 @@ accessing and curating mycroft's cache.
 """
 
 import os
-import psutil
-from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import tempfile
+from stat import S_ISREG, ST_MODE, ST_MTIME, ST_SIZE
+
+import psutil
 
 import mycroft.configuration
+
 from .log import LOG
 
 
@@ -66,13 +68,13 @@ def resolve_resource_file(res_name):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    data_dir = os.path.join(os.path.expanduser(config['data_dir']), 'res')
+    data_dir = os.path.join(os.path.expanduser(config["data_dir"]), "res")
     filename = os.path.expanduser(os.path.join(data_dir, res_name))
     if os.path.isfile(filename):
         return filename
 
     # Finally look for it in the source package
-    filename = os.path.join(os.path.dirname(__file__), '..', 'res', res_name)
+    filename = os.path.join(os.path.dirname(__file__), "..", "res", res_name)
     filename = os.path.abspath(os.path.normpath(filename))
     if os.path.isfile(filename):
         return filename
@@ -89,14 +91,14 @@ def read_stripped_lines(filename):
     Returns:
         (list) list of lines stripped from leading and ending white chars.
     """
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
             line = line.strip()
             if line:
                 yield line
 
 
-def read_dict(filename, div='='):
+def read_dict(filename, div="="):
     """Read file into dict.
 
     A file containing:
@@ -117,7 +119,7 @@ def read_dict(filename, div='='):
         (dict) generated dictionary
     """
     d = {}
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
             key, val = line.split(div)
             d[key.strip()] = val.strip()
@@ -149,8 +151,8 @@ def _get_cache_entries(directory):
     entries = ((os.stat(path), path) for path in entries)
 
     # leave only regular files, insert modification date
-    return ((stat[ST_MTIME], stat[ST_SIZE], path)
-            for stat, path in entries if S_ISREG(stat[ST_MODE]))
+    return ((stat[ST_MTIME], stat[ST_SIZE], path) for stat, path in entries
+            if S_ISREG(stat[ST_MODE]))
 
 
 def _delete_oldest(entries, bytes_needed):
@@ -202,7 +204,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     min_free_disk = mb_to_bytes(min_free_disk)
     percent_free = 100.0 - space.percent
     if percent_free < min_free_percent and space.free < min_free_disk:
-        LOG.info('Low diskspace detected, cleaning cache')
+        LOG.info("Low diskspace detected, cleaning cache")
         # calculate how many bytes we need to delete
         bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total
         bytes_needed = int(bytes_needed + 1.0)
@@ -234,7 +236,7 @@ def get_cache_directory(domain=None):
     directory = config.get("cache_path")
     if not directory:
         # If not defined, use /tmp/mycroft/cache
-        directory = get_temp_path('mycroft', 'cache')
+        directory = get_temp_path("mycroft", "cache")
     return ensure_directory_exists(directory, domain)
 
 
@@ -276,8 +278,8 @@ def create_file(filename):
         filename: Path to the file to be created
     """
     ensure_directory_exists(os.path.dirname(filename), permissions=0o775)
-    with open(filename, 'w') as f:
-        f.write('')
+    with open(filename, "w") as f:
+        f.write("")
 
 
 def get_temp_path(*args):

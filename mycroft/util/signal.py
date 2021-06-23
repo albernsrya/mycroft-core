@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+import os.path
 import tempfile
 import time
 
-import os
-import os.path
-
 import mycroft
-from .file_utils import ensure_directory_exists, create_file
+
+from .file_utils import create_file, ensure_directory_exists
 
 
 def get_ipc_directory(domain=None):

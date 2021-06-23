@@ -14,11 +14,12 @@
 #
 
 from unittest.mock import Mock
+
 from mycroft.audio.services import AudioBackend
 
 
 class WorkingBackend(AudioBackend):
-    def __init__(self, config, bus, name='Working'):
+    def __init__(self, config, bus, name="Working"):
         super(WorkingBackend, self).__init__(config, bus)
 
         # Override instance methods with mocks
@@ -39,7 +40,7 @@ class WorkingBackend(AudioBackend):
         self.shutdown = Mock()
 
     def supported_uris(self):
-        return ['file', 'http']
+        return ["file", "http"]
 
     def play(self):
         pass

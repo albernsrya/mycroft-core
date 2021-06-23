@@ -16,14 +16,14 @@
 #
 # Mycroft documentation build configuration file
 #
-import sys
-import re
 import os
+import re
+import sys
 from os.path import dirname, join
 
 import sphinx_rtd_theme
-from sphinx.ext.autodoc import (
-    ClassLevelDocumenter, InstanceAttributeDocumenter)
+from sphinx.ext.autodoc import (ClassLevelDocumenter,
+                                InstanceAttributeDocumenter)
 
 
 def iad_add_directive_header(self, sig):
@@ -32,19 +32,22 @@ def iad_add_directive_header(self, sig):
 
 InstanceAttributeDocumenter.add_directive_header = iad_add_directive_header
 
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath("../"))
 
 # General Configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.coverage",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.napoleon",
 ]
-req_path = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.realpath(__file__))), 'requirements', 'requirements.txt')
+req_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+    "requirements",
+    "requirements.txt",
+)
 
 # To easily run sphinx without additional installation autodoc_mock_imports
 # sets modules to mock.
@@ -52,97 +55,106 @@ req_path = os.path.join(os.path.dirname(os.path.dirname(
 # Step 1: Pull module names to mock from requirements
 # Assuming package name is the same as the module name
 with open(req_path) as f:
-    autodoc_mock_imports = map(str.strip, re.findall(r'^\s*[a-zA-Z_]*',
-                               f.read().lower().replace('-', '_'),
-                               flags=re.MULTILINE))
+    autodoc_mock_imports = map(
+        str.strip,
+        re.findall(r"^\s*[a-zA-Z_]*",
+                   f.read().lower().replace("-", "_"),
+                   flags=re.MULTILINE),
+    )
 
 # Step 2: Add custom names
 # Not all module names match the package name (as stated in requirements.txt)
 # this adds the modules whose names don't match the package name.
 autodoc_mock_imports = list(autodoc_mock_imports) + [
-    'adapt',
-    'alsaaudio',
-    'dateutil',
-    'past',
-    'serial',
-    'websocket',
-    'speech_recognition',
-    'yaml',
-    'mycroft_bus_client'
+    "adapt",
+    "alsaaudio",
+    "dateutil",
+    "past",
+    "serial",
+    "websocket",
+    "speech_recognition",
+    "yaml",
+    "mycroft_bus_client",
 ]
 
-templates_path = ['_templates']
-source_suffix = '.rst'
-master_doc = 'index'
+templates_path = ["_templates"]
+source_suffix = ".rst"
+master_doc = "index"
 
 
 def get_version():
-    version_file = join(dirname(__file__),
-                        '..', 'mycroft', 'version', '__init__.py')
+    version_file = join(dirname(__file__), "..", "mycroft", "version",
+                        "__init__.py")
     with open(version_file) as f:
-        while 'START_VERSION_BLOCK' not in f.readline():
+        while "START_VERSION_BLOCK" not in f.readline():
             pass
 
         def safe_read_version_line():
             try:
-                return f.readline().split('=')[1].strip()
+                return f.readline().split("=")[1].strip()
             except Exception:
-                return '0'
+                return "0"
 
         major = safe_read_version_line()
         minor = safe_read_version_line()
         build = safe_read_version_line()
-        return 'v' + '.'.join((major, minor, build))
+        return "v" + ".".join((major, minor, build))
 
 
 # General Info
-project = 'Mycroft'
-copyright = '2017, Mycroft AI Inc.'
-author = 'Mycroft AI Inc.'
+project = "Mycroft"
+copyright = "2017, Mycroft AI Inc."
+author = "Mycroft AI Inc."
 
 version = get_version()
 release = version
 
 language = None
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # Syntax Highlighting
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 todo_include_todos = False
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_theme_options = {
-    'navigation_depth': 4,
+    "navigation_depth": 4,
 }
 
 html_static_path = []
-htmlhelp_basename = 'Mycroftdoc'
+htmlhelp_basename = "Mycroftdoc"
 
 # Options for LaTeX output
 
 latex_elements = {}
 latex_documents = [
-    (master_doc, 'Mycroft.tex', 'Mycroft Documentation',
-     'Matthew Scholefield', 'manual'),
+    (
+        master_doc,
+        "Mycroft.tex",
+        "Mycroft Documentation",
+        "Matthew Scholefield",
+        "manual",
+    ),
 ]
-
 
 # Options for manual page output
 
-man_pages = [
-    (master_doc, 'mycroft', 'Mycroft Documentation',
-     [author], 1)
-]
-
+man_pages = [(master_doc, "mycroft", "Mycroft Documentation", [author], 1)]
 
 # Options for Texinfo output
 
 texinfo_documents = [
-    (master_doc, 'Mycroft', 'Mycroft Documentation',
-     author, 'Mycroft', 'Mycroft Artificial Intelligence Platform.',
-     'Miscellaneous'),
+    (
+        master_doc,
+        "Mycroft",
+        "Mycroft Documentation",
+        author,
+        "Mycroft",
+        "Mycroft Artificial Intelligence Platform.",
+        "Miscellaneous",
+    ),
 ]
 
 # Options for Napoleon

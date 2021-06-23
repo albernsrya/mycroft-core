@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import re
-from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
+from enum import Enum, IntEnum
+
 from mycroft.messagebus.message import Message
-from .mycroft_skill import MycroftSkill
+
 from .audioservice import AudioService
+from .mycroft_skill import MycroftSkill
 
 
 class CPSMatchLevel(Enum):
@@ -46,7 +48,7 @@ class CPSTrackStatus(IntEnum):
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
-    """ To integrate with the common play infrastructure of Mycroft
+    """To integrate with the common play infrastructure of Mycroft
     skills should use this base class and override the two methods
     `CPS_match_query_phrase` (for checking if the skill can play the
     utterance) and `CPS_start` for launching the media.
@@ -55,6 +57,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     mycroft-playback-control skill and no special vocab for starting playback
     is needed.
     """
+
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         self.audioservice = None
@@ -79,8 +82,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         if bus:
             super().bind(bus)
             self.audioservice = AudioService(self.bus)
-            self.add_event('play:query', self.__handle_play_query)
-            self.add_event('play:start', self.__handle_play_start)
+            self.add_event("play:query", self.__handle_play_query)
+            self.add_event("play:start", self.__handle_play_start)
 
     def __handle_play_query(self, message):
         """Query skill if it can start playback from given phrase."""
@@ -88,9 +91,12 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
         # First, notify the requestor that we are attempting to handle
         # (this extends a timeout while this skill looks for a match)
-        self.bus.emit(message.response({"phrase": search_phrase,
-                                        "skill_id": self.skill_id,
-                                        "searching": True}))
+        self.bus.emit(
+            message.response({
+                "phrase": search_phrase,
+                "skill_id": self.skill_id,
+                "searching": True
+            }))
 
         # Now invoke the CPS handler to let the skill perform its search
         result = self.CPS_match_query_phrase(search_phrase)
@@ -100,16 +106,22 @@ class CommonPlaySkill(MycroftSkill, ABC):
             level = result[1]
             callback = result[2] if len(result) > 2 else None
             confidence = self.__calc_confidence(match, search_phrase, level)
-            self.bus.emit(message.response({"phrase": search_phrase,
-                                            "skill_id": self.skill_id,
-                                            "callback_data": callback,
-                                            "service_name": self.spoken_name,
-                                            "conf": confidence}))
+            self.bus.emit(
+                message.response({
+                    "phrase": search_phrase,
+                    "skill_id": self.skill_id,
+                    "callback_data": callback,
+                    "service_name": self.spoken_name,
+                    "conf": confidence,
+                }))
         else:
             # Signal we are done (can't handle it)
-            self.bus.emit(message.response({"phrase": search_phrase,
-                                            "skill_id": self.skill_id,
-                                            "searching": False}))
+            self.bus.emit(
+                message.response({
+                    "phrase": search_phrase,
+                    "skill_id": self.skill_id,
+                    "searching": False,
+                }))
 
     def __calc_confidence(self, match, phrase, level):
         """Translate confidence level and match to a 0-1 value.
@@ -181,8 +193,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         """
         # Inject the user's utterance in case the audio backend wants to
         # interpret it.  E.g. "play some rock at full volume on the stereo"
-        if 'utterance' not in kwargs:
-            kwargs['utterance'] = self.play_service_string
+        if "utterance" not in kwargs:
+            kwargs["utterance"] = self.play_service_string
         self.audioservice.play(*args, **kwargs)
         self.CPS_send_status(uri=args[0],
                              status=CPSTrackStatus.PLAYING_AUDIOSERVICE)
@@ -248,16 +260,28 @@ class CommonPlaySkill(MycroftSkill, ABC):
         Args:
             timeout (int): Number of seconds
         """
-        self.bus.emit(Message('play:query.response',
-                              {"phrase": self.play_service_string,
-                               "searching": True,
-                               "timeout": timeout,
-                               "skill_id": self.skill_id}))
+        self.bus.emit(
+            Message(
+                "play:query.response",
+                {
+                    "phrase": self.play_service_string,
+                    "searching": True,
+                    "timeout": timeout,
+                    "skill_id": self.skill_id,
+                },
+            ))
 
-    def CPS_send_status(self, artist='', track='', album='', image='',
-                        uri='', track_length=None, elapsed_time=None,
+    def CPS_send_status(self,
+                        artist="",
+                        track="",
+                        album="",
+                        image="",
+                        uri="",
+                        track_length=None,
+                        elapsed_time=None,
                         playlist_position=None,
-                        status=CPSTrackStatus.DISAMBIGUATION, **kwargs):
+                        status=CPSTrackStatus.DISAMBIGUATION,
+                        **kwargs):
         """Inform system of playback status.
 
         If a skill is handling playback and wants the playback control to be
@@ -278,19 +302,20 @@ class CommonPlaySkill(MycroftSkill, ABC):
             elapsed_time (float): current offset into track in seconds
             playlist_position (int): Position in playlist of current track
         """
-        data = {'skill': self.name,
-                'uri': uri,
-                'artist': artist,
-                'album': album,
-                'track': track,
-                'image': image,
-                'track_length': track_length,
-                'elapsed_time': elapsed_time,
-                'playlist_position': playlist_position,
-                'status': status
-                }
+        data = {
+            "skill": self.name,
+            "uri": uri,
+            "artist": artist,
+            "album": album,
+            "track": track,
+            "image": image,
+            "track_length": track_length,
+            "elapsed_time": elapsed_time,
+            "playlist_position": playlist_position,
+            "status": status,
+        }
         data = {**data, **kwargs}  # Merge extra arguments
-        self.bus.emit(Message('play:status', data))
+        self.bus.emit(Message("play:status", data))
 
     def CPS_send_tracklist(self, tracklist):
         """Inform system of playlist track info.
