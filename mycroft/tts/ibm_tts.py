@@ -13,18 +13,24 @@
 # limitations under the License.
 #
 
-from .tts import TTSValidator
-from .remote_tts import RemoteTTS
-from mycroft.configuration import Configuration
 from requests.auth import HTTPBasicAuth
+
+from mycroft.configuration import Configuration
+
+from .remote_tts import RemoteTTS
+from .tts import TTSValidator
 
 
 class WatsonTTS(RemoteTTS):
-    PARAMS = {'accept': 'audio/wav'}
+    PARAMS = {"accept": "audio/wav"}
 
-    def __init__(self, lang, config,
-                 url='https://stream.watsonplatform.net/text-to-speech/api',
-                 api_path='/v1/synthesize'):
+    def __init__(
+        self,
+        lang,
+        config,
+        url="https://stream.watsonplatform.net/text-to-speech/api",
+        api_path="/v1/synthesize",
+    ):
         super(WatsonTTS, self).__init__(lang, config, url, api_path,
                                         WatsonTTSValidator(self))
         self.type = "wav"
@@ -41,11 +47,11 @@ class WatsonTTS(RemoteTTS):
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
-        params['LOCALE'] = self.lang
-        params['voice'] = self.voice
-        params['X-Watson-Learning-Opt-Out'] = self.config.get(
-                                           'X-Watson-Learning-Opt-Out', 'true')
-        params['text'] = sentence.encode('utf-8')
+        params["LOCALE"] = self.lang
+        params["voice"] = self.voice
+        params["X-Watson-Learning-Opt-Out"] = self.config.get(
+            "X-Watson-Learning-Opt-Out", "true")
+        params["text"] = sentence.encode("utf-8")
         return params
 
 
@@ -65,7 +71,7 @@ class WatsonTTSValidator(TTSValidator):
         if user and password or apikey:
             return
         else:
-            raise ValueError('user/pass or apikey for IBM tts is not defined')
+            raise ValueError("user/pass or apikey for IBM tts is not defined")
 
     def get_tts_class(self):
         return WatsonTTS

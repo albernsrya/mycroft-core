@@ -1,7 +1,8 @@
-import requests
 import socket
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
+
+import requests
 
 from .log import LOG
 
@@ -28,8 +29,8 @@ def _connected_ncsi():
         True if internet connection can be detected
     """
     try:
-        r = requests.get('http://www.msftncsi.com/ncsi.txt')
-        if r.text == 'Microsoft NCSI':
+        r = requests.get("http://www.msftncsi.com/ncsi.txt")
+        if r.text == "Microsoft NCSI":
             return True
     except Exception:
         pass
@@ -68,9 +69,9 @@ def _connected_google():
     """
     connect_success = False
     try:
-        urlopen('https://www.google.com', timeout=3)
+        urlopen("https://www.google.com", timeout=3)
     except URLError as ue:
-        LOG.debug('Attempt to connect to internet failed: ' + str(ue.reason))
+        LOG.debug("Attempt to connect to internet failed: " + str(ue.reason))
     else:
         connect_success = True
 

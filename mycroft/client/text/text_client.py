@@ -12,28 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import sys
+import curses
 import io
+import json
+import locale
+import os
+import os.path
+import sys
+import textwrap
+import time
 from math import ceil
+from threading import Lock, Thread
+
+import mycroft.version
+from mycroft.configuration import Configuration
+from mycroft.messagebus.client import MessageBusClient
+from mycroft.messagebus.message import Message
+from mycroft.tts import TTS
+from mycroft.util.log import LOG
 
 from .gui_server import start_qml_gui
 
-from mycroft.tts import TTS
-
-import os
-import os.path
-import time
-import curses
-import textwrap
-import json
-import mycroft.version
-from threading import Thread, Lock
-from mycroft.messagebus.client import MessageBusClient
-from mycroft.messagebus.message import Message
-from mycroft.util.log import LOG
-from mycroft.configuration import Configuration
-
-import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
 locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
@@ -44,7 +43,7 @@ bus = None  # Mycroft messagebus connection
 config = {}  # Will be populated by the Mycroft configuration
 event_thread = None
 history = []
-chat = []   # chat history, oldest at the lowest index
+chat = []  # chat history, oldest at the lowest index
 line = ""
 scr = None
 log_line_offset = 0  # num lines back in logs to show
@@ -69,7 +68,6 @@ find_str = None
 cy_chat_area = 7  # default chat history height (in lines)
 size_log_area = 0  # max number of visible log lines, calculated during draw
 
-
 # Values used to display the audio meter
 show_meter = True
 meter_peak = 20
@@ -81,8 +79,8 @@ SCR_HELP = 1
 SCR_SKILLS = 2
 screen_mode = SCR_MAIN
 
-subscreen = 0     # for help pages, etc.
-REDRAW_FREQUENCY = 10    # seconds between full redraws
+subscreen = 0  # for help pages, etc.
+REDRAW_FREQUENCY = 10  # seconds between full redraws
 last_redraw = time.time() - (REDRAW_FREQUENCY - 1)  # seed for 1s redraw
 screen_lock = Lock()
 is_screen_dirty = True
@@ -123,18 +121,19 @@ def ctrl_c_pressed():
 ##############################################################################
 # Helper functions
 
+
 def clamp(n, smallest, largest):
-    """ Force n to be between smallest and largest, inclusive """
+    """Force n to be between smallest and largest, inclusive"""
     return max(smallest, min(n, largest))
 
 
 def handleNonAscii(text):
     """
-        If default locale supports UTF-8 reencode the string otherwise
-        remove the offending characters.
+    If default locale supports UTF-8 reencode the string otherwise
+    remove the offending characters.
     """
-    if preferred_encoding == 'ASCII':
-        return ''.join([i if ord(i) < 128 else ' ' for i in text])
+    if preferred_encoding == "ASCII":
+        return "".join([i if ord(i) < 128 else " " for i in text])
     else:
         return text.encode(preferred_encoding)
 
@@ -146,17 +145,16 @@ config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
 
 
 def load_mycroft_config(bus):
-    """ Load the mycroft config and connect it to updates over the messagebus.
-    """
+    """Load the mycroft config and connect it to updates over the messagebus."""
     Configuration.set_config_update_handlers(bus)
     return Configuration.get()
 
 
 def connect_to_mycroft():
-    """ Connect to the mycroft messagebus and load and register config
-        on the bus.
+    """Connect to the mycroft messagebus and load and register config
+    on the bus.
 
-        Sets the bus and config global variables
+    Sets the bus and config global variables
     """
     global bus
     global config
@@ -172,7 +170,7 @@ def load_settings():
     global show_meter
 
     try:
-        with io.open(config_file, 'r') as f:
+        with io.open(config_file, "r") as f:
             config = json.load(f)
         if "filters" in config:
             # Disregard the filtering of DEBUG messages
@@ -196,12 +194,13 @@ def save_settings():
     config["show_last_key"] = show_last_key
     config["max_log_lines"] = max_log_lines
     config["show_meter"] = show_meter
-    with io.open(config_file, 'w') as f:
+    with io.open(config_file, "w") as f:
         f.write(str(json.dumps(config, ensure_ascii=False)))
 
 
 ##############################################################################
 # Log file monitoring
+
 
 class LogMonitorThread(Thread):
     def __init__(self, filename, logid):
@@ -297,8 +296,9 @@ class MicMonitorThread(Thread):
             try:
                 st_results = os.stat(self.filename)
 
-                if (not self.st_results or
-                        not st_results.st_ctime == self.st_results.st_ctime or
+                if (not self.st_results
+                        or not st_results.st_ctime == self.st_results.st_ctime
+                        or
                         not st_results.st_mtime == self.st_results.st_mtime):
                     self.read_mic_level()
                     self.st_results = st_results
@@ -312,13 +312,13 @@ class MicMonitorThread(Thread):
         global meter_cur
         global meter_thresh
 
-        with io.open(self.filename, 'r') as fh:
+        with io.open(self.filename, "r") as fh:
             line = fh.readline()
             # Just adjust meter settings
             # Ex:Energy:  cur=4 thresh=1.5 muted=0
-            cur_text, thresh_text, _ = line.split(' ')[-3:]
-            meter_thresh = float(thresh_text.split('=')[-1])
-            meter_cur = float(cur_text.split('=')[-1])
+            cur_text, thresh_text, _ = line.split(" ")[-3:]
+            meter_thresh = float(thresh_text.split("=")[-1])
+            meter_cur = float(cur_text.split("=")[-1])
 
 
 class ScreenDrawThread(Thread):
@@ -357,14 +357,14 @@ def start_mic_monitor(filename):
 
 
 def add_log_message(message):
-    """ Show a message for the user (mixed in the logs) """
+    """Show a message for the user (mixed in the logs)"""
     global filteredLog
     global mergedLog
     global log_line_offset
     global log_lock
 
     with log_lock:
-        message = "@" + message       # the first byte is a code
+        message = "@" + message  # the first byte is a code
         filteredLog.append(message)
         mergedLog.append(message)
 
@@ -414,9 +414,10 @@ def rebuild_filtered_log():
 ##############################################################################
 # Capturing output from Mycroft
 
+
 def handle_speak(event):
     global chat
-    utterance = event.data.get('utterance')
+    utterance = event.data.get("utterance")
     utterance = TTS.remove_ssml(utterance)
     if bSimple:
         print(">> " + utterance)
@@ -428,23 +429,24 @@ def handle_speak(event):
 def handle_utterance(event):
     global chat
     global history
-    utterance = event.data.get('utterances')[0]
+    utterance = event.data.get("utterances")[0]
     history.append(utterance)
     chat.append(utterance)
     set_screen_dirty()
 
 
 def connect(bus):
-    """ Run the mycroft messagebus referenced by bus.
+    """Run the mycroft messagebus referenced by bus.
 
-        Args:
-            bus:    Mycroft messagebus instance
+    Args:
+        bus:    Mycroft messagebus instance
     """
     bus.run_forever()
 
 
 ##############################################################################
 # Capturing the messagebus
+
 
 def handle_message(msg):
     # TODO: Think this thru a little bit -- remove this logging within core?
@@ -578,11 +580,11 @@ def _do_meter(height):
     if meter_peak > meter_thresh * 3:
         scale = meter_thresh * 3
     h_cur = clamp(int((float(meter_cur) / scale) * height), 0, height - 1)
-    h_thresh = clamp(
-        int((float(meter_thresh) / scale) * height), 0, height - 1)
+    h_thresh = clamp(int((float(meter_thresh) / scale) * height), 0,
+                     height - 1)
     clr = curses.color_pair(4)  # dark yellow
 
-    str_level = "{0:3} ".format(int(meter_cur))   # e.g. '  4'
+    str_level = "{0:3} ".format(int(meter_cur))  # e.g. '  4'
     str_thresh = "{0:4.2f}".format(meter_thresh)  # e.g. '3.24'
     meter_width = len(str_level) + len(str_thresh) + 4
     for i in range(0, height):
@@ -605,15 +607,15 @@ def _do_meter(height):
 
         # draw the line
         meter += " " * (meter_width - len(meter))
-        scr.addstr(curses.LINES - 1 - i, curses.COLS -
-                   len(meter) - 1, meter, clr)
+        scr.addstr(curses.LINES - 1 - i, curses.COLS - len(meter) - 1, meter,
+                   clr)
 
         # draw an asterisk if the audio energy is at this level
         if i <= h_cur:
             if meter_cur > meter_thresh:
-                clr_bar = curses.color_pair(3)   # dark green for loud
+                clr_bar = curses.color_pair(3)  # dark green for loud
             else:
-                clr_bar = curses.color_pair(5)   # dark blue for 'silent'
+                clr_bar = curses.color_pair(5)  # dark blue for 'silent'
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
 
@@ -622,16 +624,10 @@ def _do_gui(gui_width):
     clr = curses.color_pair(2)  # dark red
     x = curses.COLS - gui_width
     y = 3
-    draw(
-        x,
-        y,
-        " " +
-        make_titlebar(
-            "= GUI",
-            gui_width -
-            1) +
-        " ",
-        clr=CLR_HEADING)
+    draw(x,
+         y,
+         " " + make_titlebar("= GUI", gui_width - 1) + " ",
+         clr=CLR_HEADING)
     cnt = len(gui_text) + 1
     if cnt > curses.LINES - 15:
         cnt = curses.LINES - 15
@@ -680,7 +676,7 @@ def do_draw_main(scr):
     if end > cLogs:
         end = cLogs
 
-    auto_scroll = (end == cLogs)
+    auto_scroll = end == cLogs
 
     # adjust the line offset (prevents paging up too far)
     log_line_offset = cLogs - end
@@ -689,14 +685,21 @@ def do_draw_main(scr):
     if find_str:
         scr.addstr(0, 0, "Search Results: ", CLR_HEADING)
         scr.addstr(0, 16, find_str, CLR_FIND)
-        scr.addstr(0, 16 + len(find_str), " ctrl+X to end" +
-                   " " * (curses.COLS - 31 - 12 - len(find_str)) +
-                   str(start) + "-" + str(end) + " of " + str(cLogs),
-                   CLR_HEADING)
+        scr.addstr(
+            0,
+            16 + len(find_str),
+            " ctrl+X to end" + " " * (curses.COLS - 31 - 12 - len(find_str)) +
+            str(start) + "-" + str(end) + " of " + str(cLogs),
+            CLR_HEADING,
+        )
     else:
-        scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) +
-                   str(start) + "-" + str(end) + " of " + str(cLogs),
-                   CLR_HEADING)
+        scr.addstr(
+            0,
+            0,
+            "Log Output:" + " " * (curses.COLS - 31) + str(start) + "-" +
+            str(end) + " of " + str(cLogs),
+            CLR_HEADING,
+        )
     ver = " mycroft-core " + mycroft.version.CORE_VERSION_STR + " ==="
     scr.addstr(1, 0, "=" * (curses.COLS - 1 - len(ver)), CLR_HEADING)
     scr.addstr(1, curses.COLS - 1 - len(ver), ver, CLR_HEADING)
@@ -704,14 +707,14 @@ def do_draw_main(scr):
     y = 2
     for i in range(start, end):
         if i >= cLogs - 1:
-            log = '   ^--- NEWEST ---^ '
+            log = "   ^--- NEWEST ---^ "
         else:
             log = filteredLog[i]
         logid = log[0]
-        if len(log) > 25 and log[5] == '-' and log[8] == '-':
+        if len(log) > 25 and log[5] == "-" and log[8] == "-":
             log = log[11:]  # skip logid & date at the front of log line
         else:
-            log = log[1:]   # just skip the logid
+            log = log[1:]  # just skip the logid
 
         # Categorize log line
         if "| DEBUG    |" in log:
@@ -735,9 +738,9 @@ def do_draw_main(scr):
                 start = 0
             end = start + (curses.COLS - 4)
             if start == 0:
-                log = log[start:end] + "~~~~"   # start....
+                log = log[start:end] + "~~~~"  # start....
             elif end >= len_line - 1:
-                log = "~~~~" + log[start:end]   # ....end
+                log = "~~~~" + log[start:end]  # ....end
             else:
                 log = "~~" + log[start:end] + "~~"  # ..middle..
         if len_line > longest_visible_line:
@@ -747,25 +750,33 @@ def do_draw_main(scr):
 
     # Log legend in the lower-right
     y_log_legend = curses.LINES - (3 + cy_chat_area)
-    scr.addstr(y_log_legend, curses.COLS // 2 + 2,
-               make_titlebar("Log Output Legend", curses.COLS // 2 - 2),
-               CLR_HEADING)
-    scr.addstr(y_log_legend + 1, curses.COLS // 2 + 2,
-               "DEBUG output",
+    scr.addstr(
+        y_log_legend,
+        curses.COLS // 2 + 2,
+        make_titlebar("Log Output Legend", curses.COLS // 2 - 2),
+        CLR_HEADING,
+    )
+    scr.addstr(y_log_legend + 1, curses.COLS // 2 + 2, "DEBUG output",
                CLR_LOG_DEBUG)
     if len(log_files) > 0:
-        scr.addstr(y_log_legend + 2, curses.COLS // 2 + 2,
-                   os.path.basename(log_files[0]) + ", other",
-                   CLR_LOG2)
+        scr.addstr(
+            y_log_legend + 2,
+            curses.COLS // 2 + 2,
+            os.path.basename(log_files[0]) + ", other",
+            CLR_LOG2,
+        )
     if len(log_files) > 1:
-        scr.addstr(y_log_legend + 3, curses.COLS // 2 + 2,
-                   os.path.basename(log_files[1]), CLR_LOG1)
+        scr.addstr(
+            y_log_legend + 3,
+            curses.COLS // 2 + 2,
+            os.path.basename(log_files[1]),
+            CLR_LOG1,
+        )
 
     # Meter
     y_meter = y_log_legend
     if show_meter:
-        scr.addstr(y_meter, curses.COLS - 14, " Mic Level ",
-                   CLR_HEADING)
+        scr.addstr(y_meter, curses.COLS - 14, " Mic Level ", CLR_HEADING)
 
     # History log in the middle
     y_chat_history = curses.LINES - (3 + cy_chat_area)
@@ -777,7 +788,7 @@ def do_draw_main(scr):
     # Build a nicely wrapped version of the chat log
     idx_chat = len(chat) - 1
     while len(chat_out) < cy_chat_area and idx_chat >= 0:
-        if chat[idx_chat][0] == '>':
+        if chat[idx_chat][0] == ">":
             wrapper = textwrap.TextWrapper(initial_indent="",
                                            subsequent_indent="   ",
                                            width=chat_width)
@@ -816,9 +827,7 @@ def do_draw_main(scr):
         prompt = "Input (':' for command, Ctrl+C to quit)"
         if show_last_key:
             prompt += " === keycode: " + last_key
-        scr.addstr(curses.LINES - 2, 0,
-                   make_titlebar(prompt,
-                                 curses.COLS - 1),
+        scr.addstr(curses.LINES - 2, 0, make_titlebar(prompt, curses.COLS - 1),
                    CLR_HEADING)
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
@@ -832,68 +841,68 @@ def do_draw_main(scr):
 def make_titlebar(title, bar_length):
     return title + " " + ("=" * (bar_length - 1 - len(title)))
 
+
 ##############################################################################
 # Help system
 
-
-help_struct = [('Log Scrolling shortcuts',
-                [("Up / Down / PgUp / PgDn",
-                  "scroll thru history"),
-                 ("Ctrl+T / Ctrl+PgUp",
-                  "scroll to top of logs (jump to oldest)"),
-                 ("Ctrl+B / Ctrl+PgDn",
-                  "scroll to bottom of logs" + "(jump to newest)"),
-                 ("Left / Right",
-                  "scroll long lines left/right"),
-                 ("Home / End",
-                  "scroll to start/end of long lines")]),
-               ("Query History shortcuts",
-                [("Ctrl+N / Ctrl+Left",
-                  "previous query"),
-                 ("Ctrl+P / Ctrl+Right",
-                    "next query")]),
-               ("General Commands (type ':' to enter command mode)",
-                [(":quit or :exit",
-                  "exit the program"),
-                 (":meter (show|hide)",
-                    "display the microphone level"),
-                    (":keycode (show|hide)",
-                     "display typed key codes (mainly debugging)"),
-                    (":history (# lines)",
-                     "set size of visible history buffer"),
-                    (":clear",
-                     "flush the logs")]),
-               ("Log Manipulation Commands",
-                [(":filter 'STR'",
-                  "adds a log filter (optional quotes)"),
-                 (":filter remove 'STR'",
-                    "removes a log filter"),
-                    (":filter (clear|reset)",
-                     "reset filters"),
-                    (":filter (show|list)",
-                     "display current filters"),
-                    (":find 'STR'",
-                     "show logs containing 'str'"),
-                    (":log level (DEBUG|INFO|ERROR)",
-                     "set logging level"),
-                    (":log bus (on|off)",
-                     "control logging of messagebus messages")]),
-               ("Skill Debugging Commands",
-                [(":skills",
-                  "list installed Skills"),
-                 (":api SKILL",
-                    "show Skill's public API"),
-                    (":activate SKILL",
-                     "activate Skill, e.g. 'activate skill-wiki'"),
-                    (":deactivate SKILL",
-                     "deactivate Skill"),
-                    (":keep SKILL",
-                     "deactivate all Skills except the indicated Skill")])]
+help_struct = [
+    (
+        "Log Scrolling shortcuts",
+        [
+            ("Up / Down / PgUp / PgDn", "scroll thru history"),
+            ("Ctrl+T / Ctrl+PgUp", "scroll to top of logs (jump to oldest)"),
+            ("Ctrl+B / Ctrl+PgDn",
+             "scroll to bottom of logs" + "(jump to newest)"),
+            ("Left / Right", "scroll long lines left/right"),
+            ("Home / End", "scroll to start/end of long lines"),
+        ],
+    ),
+    (
+        "Query History shortcuts",
+        [
+            ("Ctrl+N / Ctrl+Left", "previous query"),
+            ("Ctrl+P / Ctrl+Right", "next query"),
+        ],
+    ),
+    (
+        "General Commands (type ':' to enter command mode)",
+        [
+            (":quit or :exit", "exit the program"),
+            (":meter (show|hide)", "display the microphone level"),
+            (":keycode (show|hide)",
+             "display typed key codes (mainly debugging)"),
+            (":history (# lines)", "set size of visible history buffer"),
+            (":clear", "flush the logs"),
+        ],
+    ),
+    (
+        "Log Manipulation Commands",
+        [
+            (":filter 'STR'", "adds a log filter (optional quotes)"),
+            (":filter remove 'STR'", "removes a log filter"),
+            (":filter (clear|reset)", "reset filters"),
+            (":filter (show|list)", "display current filters"),
+            (":find 'STR'", "show logs containing 'str'"),
+            (":log level (DEBUG|INFO|ERROR)", "set logging level"),
+            (":log bus (on|off)", "control logging of messagebus messages"),
+        ],
+    ),
+    (
+        "Skill Debugging Commands",
+        [
+            (":skills", "list installed Skills"),
+            (":api SKILL", "show Skill's public API"),
+            (":activate SKILL", "activate Skill, e.g. 'activate skill-wiki'"),
+            (":deactivate SKILL", "deactivate Skill"),
+            (":keep SKILL",
+             "deactivate all Skills except the indicated Skill"),
+        ],
+    ),
+]
 help_longest = 0
 for s in help_struct:
     for ent in s[1]:
         help_longest = max(help_longest, len(ent[0]))
-
 
 HEADER_SIZE = 2
 HEADER_FOOTER_SIZE = 4
@@ -907,7 +916,6 @@ def num_help_pages():
 
 
 def do_draw_help(scr):
-
     def render_header():
         scr.addstr(0, 0, center(25) + "Mycroft Command Line Help", CLR_HEADING)
         scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
@@ -986,6 +994,7 @@ def show_next_help():
 ##############################################################################
 # Skill debugging
 
+
 def show_skills(skills):
     """Show list of loaded Skills in as many column as necessary."""
     global scr
@@ -1013,7 +1022,7 @@ def show_skills(skills):
     col_width = 0
     skill_names = sorted(skills.keys())
     for skill in skill_names:
-        if skills[skill]['active']:
+        if skills[skill]["active"]:
             color = curses.color_pair(4)
         else:
             color = curses.color_pair(2)
@@ -1023,8 +1032,12 @@ def show_skills(skills):
         col_width = max(col_width, len(skill))
         if row == curses.LINES - 2 and column > 0 and skill != skill_names[-1]:
             column = 0
-            scr.addstr(curses.LINES - 1, 0,
-                       center(23) + "Press any key to continue", CLR_HEADING)
+            scr.addstr(
+                curses.LINES - 1,
+                0,
+                center(23) + "Press any key to continue",
+                CLR_HEADING,
+            )
             scr.refresh()
             wait_for_any_key()
             prepare_page()
@@ -1038,8 +1051,8 @@ def show_skills(skills):
                 # End of screen
                 break
 
-    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
-               CLR_HEADING)
+    scr.addstr(curses.LINES - 1, 0,
+               center(23) + "Press any key to return", CLR_HEADING)
     scr.refresh()
 
 
@@ -1061,8 +1074,8 @@ def show_skill_api(skill, data):
         nonlocal row
         nonlocal column
         scr.erase()
-        scr.addstr(0, 0, center(25) + "Skill-API for {}".format(skill),
-                   CLR_CMDLINE)
+        scr.addstr(0, 0,
+                   center(25) + "Skill-API for {}".format(skill), CLR_CMDLINE)
         scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
         row = 2
         column = 4
@@ -1071,11 +1084,11 @@ def show_skill_api(skill, data):
     for key in data:
         color = curses.color_pair(4)
 
-        scr.addstr(row, column, "{} ({})".format(key, data[key]['type']),
+        scr.addstr(row, column, "{} ({})".format(key, data[key]["type"]),
                    CLR_HEADING)
         row += 2
-        if 'help' in data[key]:
-            help_text = data[key]['help'].split('\n')
+        if "help" in data[key]:
+            help_text = data[key]["help"].split("\n")
             for line in help_text:
                 scr.addstr(row, column + 2, line, color)
                 row += 1
@@ -1084,8 +1097,12 @@ def show_skill_api(skill, data):
             row += 1
 
         if row == curses.LINES - 5:
-            scr.addstr(curses.LINES - 1, 0,
-                       center(23) + "Press any key to continue", CLR_HEADING)
+            scr.addstr(
+                curses.LINES - 1,
+                0,
+                center(23) + "Press any key to continue",
+                CLR_HEADING,
+            )
             scr.refresh()
             wait_for_any_key()
             prepare_page()
@@ -1094,8 +1111,8 @@ def show_skill_api(skill, data):
             # New column
             row = 2
 
-    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
-               CLR_HEADING)
+    scr.addstr(curses.LINES - 1, 0,
+               center(23) + "Press any key to return", CLR_HEADING)
     scr.refresh()
 
 
@@ -1107,6 +1124,7 @@ def center(str_len):
 
 ##############################################################################
 # Main UI lopo
+
 
 def _get_cmd_param(cmd, keyword):
     # Returns parameter to a command.  Will de-quote.
@@ -1198,13 +1216,13 @@ def handle_cmd(cmd):
         # Control logging behavior in all Mycroft processes
         if "level" in cmd:
             level = _get_cmd_param(cmd, ["log", "level"])
-            bus.emit(Message("mycroft.debug.log", data={'level': level}))
+            bus.emit(Message("mycroft.debug.log", data={"level": level}))
         elif "bus" in cmd:
             state = _get_cmd_param(cmd, ["log", "bus"]).lower()
             if state in ["on", "true", "yes"]:
-                bus.emit(Message("mycroft.debug.log", data={'bus': True}))
+                bus.emit(Message("mycroft.debug.log", data={"bus": True}))
             elif state in ["off", "false", "no"]:
-                bus.emit(Message("mycroft.debug.log", data={'bus': False}))
+                bus.emit(Message("mycroft.debug.log", data={"bus": False}))
     elif "history" in cmd:
         # extract last word(s)
         lines = int(_get_cmd_param(cmd, "history"))
@@ -1216,8 +1234,8 @@ def handle_cmd(cmd):
         cy_chat_area = lines
     elif "skills" in cmd:
         # List loaded skill
-        message = bus.wait_for_response(
-            Message('skillmanager.list'), reply_type='mycroft.skills.list')
+        message = bus.wait_for_response(Message("skillmanager.list"),
+                                        reply_type="mycroft.skills.list")
 
         if message:
             show_skills(message.data)
@@ -1229,29 +1247,29 @@ def handle_cmd(cmd):
         skills = cmd.split()[1:]
         if len(skills) > 0:
             for s in skills:
-                bus.emit(Message("skillmanager.deactivate", data={'skill': s}))
+                bus.emit(Message("skillmanager.deactivate", data={"skill": s}))
         else:
-            add_log_message('Usage :deactivate SKILL [SKILL2] [...]')
+            add_log_message("Usage :deactivate SKILL [SKILL2] [...]")
     elif "keep" in cmd:
         s = cmd.split()
         if len(s) > 1:
-            bus.emit(Message("skillmanager.keep", data={'skill': s[1]}))
+            bus.emit(Message("skillmanager.keep", data={"skill": s[1]}))
         else:
-            add_log_message('Usage :keep SKILL')
+            add_log_message("Usage :keep SKILL")
 
     elif "activate" in cmd:
         skills = cmd.split()[1:]
         if len(skills) > 0:
             for s in skills:
-                bus.emit(Message("skillmanager.activate", data={'skill': s}))
+                bus.emit(Message("skillmanager.activate", data={"skill": s}))
         else:
-            add_log_message('Usage :activate SKILL [SKILL2] [...]')
+            add_log_message("Usage :activate SKILL [SKILL2] [...]")
     elif "api" in cmd:
         parts = cmd.split()
         if len(parts) < 2:
             return
         skill = parts[1]
-        message = bus.wait_for_response(Message('{}.public_api'.format(skill)))
+        message = bus.wait_for_response(Message("{}.public_api".format(skill)))
         if message:
             show_skill_api(skill, message.data)
             scr.get_wch()  # blocks
@@ -1289,11 +1307,11 @@ def gui_main(stdscr):
     scr.keypad(1)
     scr.notimeout(True)
 
-    bus.on('speak', handle_speak)
-    bus.on('message', handle_message)
-    bus.on('recognizer_loop:utterance', handle_utterance)
-    bus.on('connected', handle_is_connected)
-    bus.on('reconnecting', handle_reconnecting)
+    bus.on("speak", handle_speak)
+    bus.on("message", handle_message)
+    bus.on("recognizer_loop:utterance", handle_utterance)
+    bus.on("connected", handle_is_connected)
+    bus.on("reconnecting", handle_reconnecting)
 
     add_log_message("Establishing Mycroft Messagebus connection...")
 
@@ -1317,7 +1335,7 @@ def gui_main(stdscr):
                     # Don't block, this allows us to refresh the screen while
                     # waiting on initial messagebus connection, etc
                     scr.timeout(1)
-                    c = scr.get_wch()   # unicode char or int for special keys
+                    c = scr.get_wch()  # unicode char or int for special keys
                     if c == -1:
                         continue
             except curses.error:
@@ -1381,8 +1399,8 @@ def gui_main(stdscr):
                 else:
                     last_key = str(code)
 
-            scr.timeout(-1)   # resume blocking
-            if code == 27:    # Hitting ESC twice clears the entry line
+            scr.timeout(-1)  # resume blocking
+            if code == 27:  # Hitting ESC twice clears the entry line
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_RESIZE:
@@ -1397,7 +1415,7 @@ def gui_main(stdscr):
                 # in Help mode, any key goes to next page
                 show_next_help()
                 continue
-            elif c == '\n' or code == 10 or code == 13 or code == 343:
+            elif c == "\n" or code == 10 or code == 13 or code == 343:
                 # ENTER sends the typed line to be processed by Mycroft
                 if line == "":
                     continue
@@ -1408,13 +1426,19 @@ def gui_main(stdscr):
                         break
                 else:
                     # Treat this as an utterance
-                    bus.emit(Message("recognizer_loop:utterance",
-                                     {'utterances': [line.strip()],
-                                      'lang': config.get('lang', 'en-us')},
-                                     {'client_name': 'mycroft_cli',
-                                      'source': 'debug_cli',
-                                      'destination': ["skills"]}
-                                     ))
+                    bus.emit(
+                        Message(
+                            "recognizer_loop:utterance",
+                            {
+                                "utterances": [line.strip()],
+                                "lang": config.get("lang", "en-us"),
+                            },
+                            {
+                                "client_name": "mycroft_cli",
+                                "source": "debug_cli",
+                                "destination": ["skills"],
+                            },
+                        ))
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
@@ -1495,7 +1519,7 @@ def simple_cli():
     global bSimple
     bSimple = True
 
-    bus.on('speak', handle_speak)
+    bus.on("speak", handle_speak)
     try:
         while True:
             # Sleep for a while so all the output that results
@@ -1503,11 +1527,16 @@ def simple_cli():
             time.sleep(1.5)
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
-            bus.emit(Message("recognizer_loop:utterance",
-                             {'utterances': [line.strip()]},
-                             {'client_name': 'mycroft_simple_cli',
-                              'source': 'debug_cli',
-                              'destination': ["skills"]}))
+            bus.emit(
+                Message(
+                    "recognizer_loop:utterance",
+                    {"utterances": [line.strip()]},
+                    {
+                        "client_name": "mycroft_simple_cli",
+                        "source": "debug_cli",
+                        "destination": ["skills"],
+                    },
+                ))
     except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")
@@ -1518,10 +1547,10 @@ def simple_cli():
 
 
 def connect_to_messagebus():
-    """ Connect to the mycroft messagebus and launch a thread handling the
-        connection.
+    """Connect to the mycroft messagebus and launch a thread handling the
+    connection.
 
-        Returns: WebsocketClient
+    Returns: WebsocketClient
     """
     bus = MessageBusClient()  # Mycroft messagebus connection
 

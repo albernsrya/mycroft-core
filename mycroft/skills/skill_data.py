@@ -12,36 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Functions to load skill data such as intents and regular expressions."""
 
 import collections
 import csv
 import re
 from os import walk
-from os.path import splitext, join
+from os.path import join, splitext
 
 from mycroft.util.format import expand_options
 from mycroft.util.log import LOG
 
 
 def read_vocab_file(path):
-    """ Read voc file.
+    """Read voc file.
 
-        This reads a .voc file, stripping out empty lines comments and expand
-        parentheses. It returns each line as a list of all expanded
-        alternatives.
+    This reads a .voc file, stripping out empty lines comments and expand
+    parentheses. It returns each line as a list of all expanded
+    alternatives.
 
-        Args:
-            path (str): path to vocab file.
+    Args:
+        path (str): path to vocab file.
 
-        Returns:
-            List of Lists of strings.
+    Returns:
+        List of Lists of strings.
     """
     vocab = []
-    with open(path, 'r', encoding='utf8') as voc_file:
+    with open(path, "r", encoding="utf8") as voc_file:
         for line in voc_file.readlines():
-            if line.startswith('#') or line.strip() == '':
+            if line.startswith("#") or line.strip() == "":
                 continue
             vocab.append(expand_options(line.lower()))
     return vocab
@@ -56,14 +55,14 @@ def load_regex_from_file(path, skill_id):
         skill_id:   skill_id to the regex is tied to
     """
     regexes = []
-    if path.endswith('.rx'):
-        with open(path, 'r', encoding='utf8') as reg_file:
+    if path.endswith(".rx"):
+        with open(path, "r", encoding="utf8") as reg_file:
             for line in reg_file.readlines():
                 if line.startswith("#"):
                     continue
-                LOG.debug('regex pre-munge: ' + line.strip())
+                LOG.debug("regex pre-munge: " + line.strip())
                 regex = munge_regex(line.strip(), skill_id)
-                LOG.debug('regex post-munge: ' + regex)
+                LOG.debug("regex post-munge: " + regex)
                 # Raise error if regex can't be compiled
                 re.compile(regex)
                 regexes.append(regex)
@@ -118,7 +117,7 @@ def to_alnum(skill_id):
     Returns:
         (str) String of letters
     """
-    return ''.join(c if c.isalnum() else '_' for c in str(skill_id))
+    return "".join(c if c.isalnum() else "_" for c in str(skill_id))
 
 
 def munge_regex(regex, skill_id):
@@ -130,8 +129,8 @@ def munge_regex(regex, skill_id):
     Returns:
         (str) munged regex
     """
-    base = '(?P<' + to_alnum(skill_id)
-    return base.join(regex.split('(?P<'))
+    base = "(?P<" + to_alnum(skill_id)
+    return base.join(regex.split("(?P<"))
 
 
 def munge_intent_parser(intent_parser, name, skill_id):
@@ -149,8 +148,8 @@ def munge_intent_parser(intent_parser, name, skill_id):
         skill_id: (int) skill identifier
     """
     # Munge parser name
-    if not name.startswith(str(skill_id) + ':'):
-        intent_parser.name = str(skill_id) + ':' + name
+    if not name.startswith(str(skill_id) + ":"):
+        intent_parser.name = str(skill_id) + ":" + name
     else:
         intent_parser.name = name
 
@@ -179,7 +178,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
     # Munge at_least_one keywords
     at_least_one = []
     for i in intent_parser.at_least_one:
-        element = [skill_id + e.replace(skill_id, '') for e in i]
+        element = [skill_id + e.replace(skill_id, "") for e in i]
         at_least_one.append(tuple(element))
     intent_parser.at_least_one = at_least_one
 
@@ -224,7 +223,7 @@ def read_translated_file(filename, data):
     """
     if filename:
         with open(filename) as f:
-            text = f.read().replace('{{', '{').replace('}}', '}')
-            return text.format(**data or {}).rstrip('\n').split('\n')
+            text = f.read().replace("{{", "{").replace("}}", "}")
+            return text.format(**data or {}).rstrip("\n").split("\n")
     else:
         return None

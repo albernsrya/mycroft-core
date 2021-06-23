@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
-    SIG_DFL, default_int_handler, SIG_IGN  # signals
-
 import os  # Operating System functions
-
+from signal import SIGTERM  # signals
+from signal import (SIG_DFL, SIG_IGN, SIGINT, SIGKILL, default_int_handler,
+                    getsignal, signal)
 
 #
 # Wrapper around chain of handler functions for a specific system level signal.
@@ -26,7 +25,6 @@ from mycroft.util.file_utils import get_temp_path
 
 
 class Signal:  # python 3+ class Signal
-
     """
     Capture and replace a signal handler with a user supplied function.
     The user supplied function is always called first then the previous
@@ -54,7 +52,7 @@ class Signal:  # python 3+ class Signal
         self.__previous_func = signal(sig_value, self)
         self.__previous_func = {  # Convert signal codes to functions
             SIG_DFL: default_int_handler,
-            SIG_IGN: lambda a, b: None
+            SIG_IGN: lambda a, b: None,
         }.get(self.__previous_func, self.__previous_func)
 
     #
@@ -89,7 +87,6 @@ class Signal:  # python 3+ class Signal
 # Create, delete and manipulate a PID file for this service
 # ------------------------------------------------------------------------------
 class Lock:  # python 3+ 'class Lock'
-
     """
     Create and maintains the PID lock file for this application process.
     The PID lock file is located in /tmp/mycroft/*.pid.  If another process
@@ -99,8 +96,8 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = get_temp_path('mycroft')
-    FILE = '/{}.pid'
+    DIRECTORY = get_temp_path("mycroft")
+    FILE = "/{}.pid"
 
     #
     # Constructor
@@ -124,8 +121,10 @@ class Lock:  # python 3+ 'class Lock'
         """
         Trap both SIGINT and SIGTERM to gracefully clean up PID files
         """
-        self.__handlers = {SIGINT: Signal(SIGINT, self.delete),
-                           SIGTERM: Signal(SIGTERM, self.delete)}
+        self.__handlers = {
+            SIGINT: Signal(SIGINT, self.delete),
+            SIGTERM: Signal(SIGTERM, self.delete),
+        }
 
     #
     # Check to see if the PID already exists
@@ -141,7 +140,7 @@ class Lock:  # python 3+ 'class Lock'
         """
         if not os.path.isfile(self.path):
             return
-        with open(self.path, 'r') as L:
+        with open(self.path, "r") as L:
             try:
                 os.kill(int(L.read()), SIGKILL)
             except Exception as E:
@@ -157,8 +156,8 @@ class Lock:  # python 3+ 'class Lock'
         """
         if not os.path.exists(Lock.DIRECTORY):
             os.makedirs(Lock.DIRECTORY)
-        with open(self.path, 'w') as L:
-            L.write('{}'.format(self.__pid))
+        with open(self.path, "w") as L:
+            L.write("{}".format(self.__pid))
 
     #
     # Create the PID file
@@ -183,10 +182,11 @@ class Lock:  # python 3+ 'class Lock'
         handler.
         """
         try:
-            with open(self.path, 'r') as L:
+            with open(self.path, "r") as L:
                 pid = int(L.read())
                 if self.__pid == pid:
                     os.unlink(self.path)
         except IOError:
             pass
+
     # End class Lock

@@ -37,9 +37,8 @@ from urllib import parse
 
 import requests
 
-from mycroft.util.file_utils import (
-    ensure_directory_exists, get_cache_directory, curate_cache
-)
+from mycroft.util.file_utils import (curate_cache, ensure_directory_exists,
+                                     get_cache_directory)
 from mycroft.util.log import LOG
 
 
@@ -49,8 +48,8 @@ def _get_mimic2_audio(sentence: str, url: str) -> Tuple[bytes, str]:
     Args:
         sentence: The sentence to be cached
     """
-    LOG.debug("Retrieving Mimic2 audio for sentence \"{}\'".format(sentence))
-    mimic2_url = url + parse.quote(sentence) + '&visimes=True'
+    LOG.debug("Retrieving Mimic2 audio for sentence \"{}'".format(sentence))
+    mimic2_url = url + parse.quote(sentence) + "&visimes=True"
     response = requests.get(mimic2_url)
     response_data = response.json()
     audio = base64.b64decode(response_data["audio_base64"])
@@ -82,7 +81,7 @@ def hash_from_path(path: Path) -> str:
     Returns:
         Hash reference for file.
     """
-    return path.with_suffix('').name
+    return path.with_suffix("").name
 
 
 class AudioFile:
@@ -142,6 +141,7 @@ class PhonemeFile:
 
 class TextToSpeechCache:
     """Class for all persistent and temporary caching operations."""
+
     def __init__(self, tts_config, tts_name, audio_file_type):
         self.config = tts_config
         self.tts_name = tts_name
@@ -149,18 +149,14 @@ class TextToSpeechCache:
             self.persistent_cache_dir = Path(self.config["preloaded_cache"])
         else:
             self.persistent_cache_dir = None
-        self.temporary_cache_dir = Path(
-            get_cache_directory("tts/" + tts_name)
-        )
+        self.temporary_cache_dir = Path(get_cache_directory("tts/" + tts_name))
         self.audio_file_type = audio_file_type
         self.resource_dir = Path(__file__).parent.parent.joinpath("res")
         self.cached_sentences = dict()
-        ensure_directory_exists(
-            str(self.persistent_cache_dir), permissions=0o755
-        )
-        ensure_directory_exists(
-            str(self.temporary_cache_dir), permissions=0o755
-        )
+        ensure_directory_exists(str(self.persistent_cache_dir),
+                                permissions=0o755)
+        ensure_directory_exists(str(self.temporary_cache_dir),
+                                permissions=0o755)
 
     def __contains__(self, sha):
         """The cache contains a SHA if it knows of it and it exists on disk."""
@@ -169,8 +165,7 @@ class TextToSpeechCache:
         else:
             # Audio file must exist, phonemes are optional.
             audio, phonemes = self.cached_sentences[sha]
-            return (audio.exists() and
-                    (phonemes is None or phonemes.exists()))
+            return audio.exists() and (phonemes is None or phonemes.exists())
 
     def load_persistent_cache(self):
         """Load the contents of dialog files to the persistent cache directory.
@@ -200,9 +195,8 @@ class TextToSpeechCache:
         glob_pattern = "*." + self.audio_file_type
         for file_path in self.persistent_cache_dir.glob(glob_pattern):
             sentence_hash = file_path.name.split(".")[0]
-            audio_file = AudioFile(
-                self.persistent_cache_dir, sentence_hash, self.audio_file_type
-            )
+            audio_file = AudioFile(self.persistent_cache_dir, sentence_hash,
+                                   self.audio_file_type)
             self.cached_sentences[sentence_hash] = audio_file, None
 
     def _load_existing_phoneme_files(self):
@@ -216,9 +210,8 @@ class TextToSpeechCache:
             cached_sentence = self.cached_sentences.get(sentence_hash)
             if cached_sentence is not None:
                 audio_file = cached_sentence[0]
-                phoneme_file = PhonemeFile(
-                    self.persistent_cache_dir, sentence_hash
-                )
+                phoneme_file = PhonemeFile(self.persistent_cache_dir,
+                                           sentence_hash)
                 self.cached_sentences[sentence_hash] = audio_file, phoneme_file
 
     def _collect_dialogs(self) -> List:
@@ -272,30 +265,27 @@ class TextToSpeechCache:
         """
         sentence_hash = hash_sentence(sentence)
         if sentence_hash not in self.cached_sentences:
-            LOG.info("Adding \"{}\" to cache".format(sentence))
+            LOG.info('Adding "{}" to cache'.format(sentence))
             try:
                 mimic2_url = self.config["url"]
                 audio, phonemes = _get_mimic2_audio(sentence, mimic2_url)
             except Exception:
-                log_msg = "Failed to get audio for sentence \"{}\""
+                log_msg = 'Failed to get audio for sentence "{}"'
                 LOG.exception(log_msg.format(sentence))
             else:
                 self._add_to_persistent_cache(sentence_hash, audio, phonemes)
 
-    def _add_to_persistent_cache(
-            self, sentence_hash: str, audio: bytes, phonemes: str
-    ):
+    def _add_to_persistent_cache(self, sentence_hash: str, audio: bytes,
+                                 phonemes: str):
         """Add a audio/phoneme file pair to the persistent cache."""
-        audio_file = AudioFile(
-            self.persistent_cache_dir, sentence_hash, self.audio_file_type
-        )
+        audio_file = AudioFile(self.persistent_cache_dir, sentence_hash,
+                               self.audio_file_type)
         audio_file.save(audio)
         if phonemes is None:
             phoneme_file = None
         else:
-            phoneme_file = PhonemeFile(
-                self.persistent_cache_dir, sentence_hash
-            )
+            phoneme_file = PhonemeFile(self.persistent_cache_dir,
+                                       sentence_hash)
             phoneme_file.save(phonemes)
         self.cached_sentences[sentence_hash] = audio_file, phoneme_file
 
@@ -321,9 +311,8 @@ class TextToSpeechCache:
 
     def define_audio_file(self, sentence_hash: str) -> AudioFile:
         """Build an instance of an object representing an audio file."""
-        audio_file = AudioFile(
-            self.temporary_cache_dir, sentence_hash, self.audio_file_type
-        )
+        audio_file = AudioFile(self.temporary_cache_dir, sentence_hash,
+                               self.audio_file_type)
         return audio_file
 
     def define_phoneme_file(self, sentence_hash: str) -> PhonemeFile:

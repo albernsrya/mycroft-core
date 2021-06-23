@@ -56,7 +56,7 @@ class WordExtractor:
 
     @staticmethod
     def create_silence(seconds, sample_rate, sample_width):
-        return '\0' * int(seconds * sample_rate * sample_width)
+        return "\0" * int(seconds * sample_rate * sample_width)
 
     def get_audio_data_before(self):
         byte_data = self.audio.frame_data[0:self.begin] + self.silence_data
@@ -64,7 +64,7 @@ class WordExtractor:
                          self.audio.sample_width)
 
     def get_audio_data_after(self):
-        byte_data = self.silence_data + self.audio.frame_data[self.end:
-                                                              self.audio_size]
+        byte_data = (self.silence_data +
+                     self.audio.frame_data[self.end:self.audio_size])
         return AudioData(byte_data, self.audio.sample_rate,
                          self.audio.sample_width)

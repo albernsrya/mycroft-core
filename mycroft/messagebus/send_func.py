@@ -32,17 +32,11 @@ def send(message_to_send, data_to_send=None):
     data_to_send = data_to_send or {}
 
     # Calculate the standard Mycroft messagebus websocket address
-    config = Configuration.get([DEFAULT_CONFIG,
-                                SYSTEM_CONFIG,
-                                USER_CONFIG],
+    config = Configuration.get([DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG],
                                cache=False)
     config = config.get("websocket")
-    url = MessageBusClient.build_url(
-        config.get("host"),
-        config.get("port"),
-        config.get("route"),
-        config.get("ssl")
-    )
+    url = MessageBusClient.build_url(config.get("host"), config.get("port"),
+                                     config.get("route"), config.get("ssl"))
 
     # Send the provided message/data
     ws = create_connection(url)

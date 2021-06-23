@@ -17,10 +17,10 @@
 The utility is a real simple implementation leveraging the wget command line
 application supporting resume on failed download.
 """
-from glob import glob
 import os
-from os.path import exists, dirname
 import subprocess
+from glob import glob
+from os.path import dirname, exists
 from threading import Thread
 
 from .file_utils import ensure_directory_exists
@@ -37,10 +37,10 @@ def _get_download_tmp(dest):
     Returns:
         (str) path to temporary download location
     """
-    tmp_base = dest + '.part'
-    existing = glob(tmp_base + '*')
+    tmp_base = dest + ".part"
+    existing = glob(tmp_base + "*")
     if len(existing) > 0:
-        return '{}.{}'.format(tmp_base, len(existing))
+        return "{}.{}".format(tmp_base, len(existing))
     else:
         return tmp_base
 
@@ -86,10 +86,12 @@ class Downloader(Thread):
         Args:
             dest (str): Save location
         """
-        cmd = ['wget', '-c', self.url, '-O', dest,
-               '--tries=20', '--read-timeout=5']
+        cmd = [
+            "wget", "-c", self.url, "-O", dest, "--tries=20",
+            "--read-timeout=5"
+        ]
         if self.header:
-            cmd += ['--header={}'.format(self.header)]
+            cmd += ["--header={}".format(self.header)]
         return subprocess.call(cmd)
 
     def run(self):
@@ -123,7 +125,7 @@ class Downloader(Thread):
     def cleanup(self, tmp):
         """Cleanup after download attempt."""
         if exists(tmp):
-            os.remove(self.dest + '.part')
+            os.remove(self.dest + ".part")
         if self.status == 200:
             self.status = -1
 

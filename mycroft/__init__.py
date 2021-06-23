@@ -16,20 +16,22 @@ from os.path import abspath, dirname, join
 
 from mycroft.api import Api
 from mycroft.messagebus.message import Message
+from mycroft.skills import (FallbackSkill, MycroftSkill, intent_file_handler,
+                            intent_handler)
 from mycroft.skills.context import adds_context, removes_context
-from mycroft.skills import (MycroftSkill, FallbackSkill,
-                            intent_handler, intent_file_handler)
 from mycroft.skills.intent_service import AdaptIntent
 
-MYCROFT_ROOT_PATH = abspath(join(dirname(__file__), '..'))
+MYCROFT_ROOT_PATH = abspath(join(dirname(__file__), ".."))
 
-__all__ = ['MYCROFT_ROOT_PATH',
-           'Api',
-           'Message',
-           'adds_context',
-           'removes_context',
-           'MycroftSkill',
-           'FallbackSkill',
-           'intent_handler',
-           'intent_file_handler',
-           'AdaptIntent']
+__all__ = [
+    "MYCROFT_ROOT_PATH",
+    "Api",
+    "Message",
+    "adds_context",
+    "removes_context",
+    "MycroftSkill",
+    "FallbackSkill",
+    "intent_handler",
+    "intent_file_handler",
+    "AdaptIntent",
+]

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
 from abc import ABC, abstractmethod
+from enum import IntEnum
+
 from .mycroft_skill import MycroftSkill
 
 
@@ -24,7 +25,7 @@ class CQSMatchLevel(IntEnum):
 
 
 # Copy of CQSMatchLevel to use if the skill returns visual media
-CQSVisualMatchLevel = IntEnum('CQSVisualMatchLevel',
+CQSVisualMatchLevel = IntEnum("CQSVisualMatchLevel",
                               [e.name for e in CQSMatchLevel])
 
 
@@ -32,7 +33,7 @@ def is_CQSVisualMatchLevel(match_level):
     return isinstance(match_level, type(CQSVisualMatchLevel.EXACT))
 
 
-VISUAL_DEVICES = ['mycroft_mark_2']
+VISUAL_DEVICES = ["mycroft_mark_2"]
 
 
 def handles_visuals(platform):
@@ -49,6 +50,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
     This class works in conjunction with skill-query which collects
     answers from several skills presenting the best one available.
     """
+
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
 
@@ -60,17 +62,20 @@ class CommonQuerySkill(MycroftSkill, ABC):
         """
         if bus:
             super().bind(bus)
-            self.add_event('question:query', self.__handle_question_query)
-            self.add_event('question:action', self.__handle_query_action)
+            self.add_event("question:query", self.__handle_question_query)
+            self.add_event("question:action", self.__handle_query_action)
 
     def __handle_question_query(self, message):
         search_phrase = message.data["phrase"]
 
         # First, notify the requestor that we are attempting to handle
         # (this extends a timeout while this skill looks for a match)
-        self.bus.emit(message.response({"phrase": search_phrase,
-                                        "skill_id": self.skill_id,
-                                        "searching": True}))
+        self.bus.emit(
+            message.response({
+                "phrase": search_phrase,
+                "skill_id": self.skill_id,
+                "searching": True
+            }))
 
         # Now invoke the CQS handler to let the skill perform its search
         result = self.CQS_match_query_phrase(search_phrase)
@@ -81,16 +86,22 @@ class CommonQuerySkill(MycroftSkill, ABC):
             answer = result[2]
             callback = result[3] if len(result) > 3 else None
             confidence = self.__calc_confidence(match, search_phrase, level)
-            self.bus.emit(message.response({"phrase": search_phrase,
-                                            "skill_id": self.skill_id,
-                                            "answer": answer,
-                                            "callback_data": callback,
-                                            "conf": confidence}))
+            self.bus.emit(
+                message.response({
+                    "phrase": search_phrase,
+                    "skill_id": self.skill_id,
+                    "answer": answer,
+                    "callback_data": callback,
+                    "conf": confidence,
+                }))
         else:
             # Signal we are done (can't handle it)
-            self.bus.emit(message.response({"phrase": search_phrase,
-                                            "skill_id": self.skill_id,
-                                            "searching": False}))
+            self.bus.emit(
+                message.response({
+                    "phrase": search_phrase,
+                    "skill_id": self.skill_id,
+                    "searching": False,
+                }))
 
     def __calc_confidence(self, match, phrase, level):
         # Assume the more of the words that get consumed, the better the match
@@ -99,7 +110,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
             consumed_pct = 1.0
 
         # Add bonus if match has visuals and the device supports them.
-        platform = self.config_core.get('enclosure', {}).get('platform')
+        platform = self.config_core.get("enclosure", {}).get("platform")
         if is_CQSVisualMatchLevel(level) and handles_visuals(platform):
             bonus = 0.1
         else:

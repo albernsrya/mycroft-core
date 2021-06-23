@@ -17,8 +17,8 @@ import json
 import sys
 import traceback
 
-from tornado.websocket import WebSocketHandler
 from pyee import EventEmitter
+from tornado.websocket import WebSocketHandler
 
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
@@ -60,8 +60,8 @@ class MessageBusEventHandler(WebSocketHandler):
         client_connections.remove(self)
 
     def emit(self, channel_message):
-        if (hasattr(channel_message, 'serialize') and
-                callable(getattr(channel_message, 'serialize'))):
+        if hasattr(channel_message, "serialize") and callable(
+                getattr(channel_message, "serialize")):
             self.write_message(channel_message.serialize())
         else:
             self.write_message(json.dumps(channel_message))

@@ -14,13 +14,15 @@
 #
 import re
 
-from mycroft.util.parse import normalize
-from mycroft_bus_client.message import dig_for_message
 import mycroft_bus_client
+from mycroft_bus_client.message import dig_for_message
+
+from mycroft.util.parse import normalize
 
 
 class Message(mycroft_bus_client.Message):
     """Mycroft specific Message class."""
+
     def utterance_remainder(self):
         """
         For intents get the portion not consumed by Adapt.
@@ -36,5 +38,5 @@ class Message(mycroft_bus_client.Message):
         if utt and "__tags__" in self.data:
             for token in self.data["__tags__"]:
                 # Substitute only whole words matching the token
-                utt = re.sub(r'\b' + token.get("key", "") + r"\b", "", utt)
+                utt = re.sub(r"\b" + token.get("key", "") + r"\b", "", utt)
         return normalize(utt)

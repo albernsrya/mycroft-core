@@ -13,15 +13,17 @@
 # limitations under the License.
 #
 
-from .tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
+
+from .tts import TTS, TTSValidator
 
 
 class BingTTS(TTS):
     def __init__(self, lang, config):
         super(BingTTS, self).__init__(lang, config, BingTTSValidator(self))
-        self.type = 'wav'
+        self.type = "wav"
         from bingtts import Translator
+
         self.config = Configuration.get().get("tts", {}).get("bing", {})
         api = self.config.get("api_key")
         self.bing = Translator(api)
@@ -29,8 +31,7 @@ class BingTTS(TTS):
         self.format = self.config.get("format", "riff-16khz-16bit-mono-pcm")
 
     def get_tts(self, sentence, wav_file):
-        output = self.bing.speak(sentence, self.lang, self.gender,
-                                 self.format)
+        output = self.bing.speak(sentence, self.lang, self.gender, self.format)
         with open(wav_file, "w") as f:
             f.write(output)
         return (wav_file, None)  # No phonemes
@@ -45,8 +46,8 @@ class BingTTSValidator(TTSValidator):
             from bingtts import Translator
         except ImportError:
             raise Exception(
-                'BingTTS dependencies not installed, please run pip install '
-                'git+https://github.com/westparkcom/Python-Bing-TTS.git ')
+                "BingTTS dependencies not installed, please run pip install "
+                "git+https://github.com/westparkcom/Python-Bing-TTS.git ")
 
     def validate_lang(self):
         # TODO

@@ -14,19 +14,16 @@
 #
 import unittest
 import unittest.mock as mock
-
+from os.path import exists
 from shutil import rmtree
 from threading import Thread
 from time import sleep
 
-from os.path import exists
-
 import mycroft.audio
-from mycroft.util import create_signal, check_for_signal
+from mycroft.util import check_for_signal, create_signal
 from mycroft.util.file_utils import get_temp_path
 
 """Tests for public audio service utils."""
-
 
 done_waiting = False
 
@@ -39,36 +36,36 @@ def wait_while_speaking_thread():
 
 class TestInterface(unittest.TestCase):
     def setUp(self):
-        if exists(get_temp_path('mycroft')):
-            rmtree(get_temp_path('mycroft'))
+        if exists(get_temp_path("mycroft")):
+            rmtree(get_temp_path("mycroft"))
 
     def test_is_speaking(self):
-        create_signal('isSpeaking')
+        create_signal("isSpeaking")
         self.assertTrue(mycroft.audio.is_speaking())
         # Check that the signal hasn't been removed
-        self.assertTrue(check_for_signal('isSpeaking'))
+        self.assertTrue(check_for_signal("isSpeaking"))
         self.assertFalse(mycroft.audio.is_speaking())
 
     def test_wait_while_speaking(self):
         # Check that test terminates
-        create_signal('isSpeaking')
+        create_signal("isSpeaking")
         Thread(target=wait_while_speaking_thread).start()
         sleep(2)
         self.assertFalse(done_waiting)
-        check_for_signal('isSpeaking')
+        check_for_signal("isSpeaking")
         sleep(2)
         self.assertTrue(done_waiting)
 
-    @mock.patch('mycroft.audio.utils.is_speaking')
-    @mock.patch('mycroft.messagebus.send_func.send')
+    @mock.patch("mycroft.audio.utils.is_speaking")
+    @mock.patch("mycroft.messagebus.send_func.send")
     def test_stop_speaking(self, mock_send, mock_is_speaking):
         """Test that stop speak message is sent."""
         mock_is_speaking.return_value = True
         mycroft.audio.stop_speaking()
-        mock_send.assert_called_with('mycroft.audio.speech.stop')
+        mock_send.assert_called_with("mycroft.audio.speech.stop")
 
-    @mock.patch('mycroft.audio.utils.is_speaking')
-    @mock.patch('mycroft.messagebus.send_func.send')
+    @mock.patch("mycroft.audio.utils.is_speaking")
+    @mock.patch("mycroft.messagebus.send_func.send")
     def test_stop_speaking_when_not(self, mock_send, mock_is_speaking):
         """Check that the stop speaking msg isn't sent when not speaking."""
         mock_is_speaking.return_value = False
